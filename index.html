@@ -543,6 +543,7 @@
         const filterInputsContainer = document.getElementById('filter-inputs-container');
         const summaryDataContainer = document.getElementById('summary-content');
         const summaryExtrasContainer = document.getElementById('extra-summary-details');
+        const searchInput = document.getElementById('search-guest-name');
 
         let allBookings = [];
         let currentMonth = new Date();
@@ -784,6 +785,15 @@
                 });
             });
         };
+        
+        // Aggiungi un nuovo listener all'input di ricerca per filtrare le prenotazioni
+        searchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const filteredBookings = allBookings.filter(booking => {
+                return booking.guestName.toLowerCase().includes(searchTerm);
+            });
+            renderBookingsList(filteredBookings);
+        });
 
         // Gestione dell'invio del modulo di modifica
         editForm.addEventListener('submit', async (e) => {
@@ -1495,4 +1505,4 @@
     </script>
 </body>
 </html>
-last last
+last final

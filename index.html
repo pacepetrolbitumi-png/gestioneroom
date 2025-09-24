@@ -448,7 +448,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, collection, query, onSnapshot, addDoc, updateDoc, deleteDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, collection, query, onSnapshot, addDoc, updateDoc, deleteDoc, setLogLevel, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
         // Attiva i log per il debug di Firestore
         setLogLevel('debug');
@@ -643,12 +643,23 @@
         // Funzioni per la vista Gestione Prenotazioni
         const renderBookingsList = (bookings) => {
             const listEl = bookingsList;
-            if (bookings.length === 0) {
-                listEl.innerHTML = `<p class="text-center text-gray-500">Nessuna prenotazione trovata.</p>`;
+            
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            // Filtra le prenotazioni per visualizzare solo quelle attive o future
+            const activeBookings = bookings.filter(booking => {
+                const checkoutDate = new Date(booking.checkOutDate);
+                return checkoutDate >= today;
+            });
+
+            if (activeBookings.length === 0) {
+                listEl.innerHTML = `<p class="text-center text-gray-500">Nessuna prenotazione in corso o futura.</p>`;
                 return;
             }
+            
             listEl.innerHTML = '';
-            bookings.forEach(booking => {
+            activeBookings.forEach(booking => {
                 const checkIn = new Date(booking.checkInDate);
                 const checkOut = new Date(booking.checkOutDate);
                 const diffTime = Math.abs(checkOut - checkIn);
@@ -746,7 +757,7 @@
                         editNumGuests.value = booking.numGuests;
                         editDailyRate.value = booking.dailyRate;
                         editCheckinDate.value = booking.checkInDate;
-                        editCheckoutDate.value = booking.checkoutDate;
+                        editCheckoutDate.value = booking.checkOutDate;
                         editDiscountRate.value = booking.discountRate;
                         editPaymentStatus.value = booking.paymentStatus;
                         editIntolerances.value = booking.intolerances;
@@ -1513,4 +1524,4 @@
     </script>
 </body>
 </html>
-rrr
+eee

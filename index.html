@@ -83,167 +83,343 @@
     <!-- Sezione principale dell'app -->
     <div class="bg-white rounded-xl shadow-lg p-6 max-w-5xl w-full">
         <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Gestione Prenotazioni B&B</h1>
-        <p class="text-sm text-center text-gray-500 mb-6">
-            Il tuo ID utente è: <span id="user-id" class="font-mono bg-gray-200 px-2 py-1 rounded-md text-xs">Caricamento...</span>
-        </p>
-
-        <!-- Pulsanti di navigazione -->
-        <div class="flex justify-center space-x-4 mb-6">
-            <button id="show-manager-btn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">Gestione Prenotazioni</button>
-            <button id="show-calendar-btn" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors">Calendario</button>
-            <button id="show-summary-btn" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors">Riepilogo</button>
-        </div>
-
-        <!-- Vista: Gestore Prenotazioni -->
-        <div id="booking-manager-view" class="block">
-            <!-- Form per aggiungere una nuova prenotazione -->
-            <form id="booking-form" class="mb-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <h2 class="text-2xl font-semibold text-gray-700 mb-4">Aggiungi nuova prenotazione</h2>
-                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div class="flex flex-col">
-                        <label for="guest-name" class="text-sm font-medium text-gray-600 mb-1">Nome Ospite</label>
-                        <input type="text" id="guest-name" placeholder="Es. Mario Rossi" required class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                    </div>
-                    <div class="flex flex-col">
-                        <label for="room-name" class="text-sm font-medium text-gray-600 mb-1">Stanza</label>
-                        <select id="room-name" required class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                            <option value="">Seleziona una stanza</option>
-                            <option value="Malva">Malva</option>
-                            <option value="Margherita">Margherita</option>
-                            <option value="Papavero">Papavero</option>
-                            <option value="Ginestra">Ginestra</option>
-                            <option value="Camomilla">Camomilla</option>
-                            <option value="Gelsomino">Gelsomino</option>
-                        </select>
-                    </div>
-                    <div class="flex flex-col">
-                        <label for="num-guests" class="text-sm font-medium text-gray-600 mb-1">Numero Ospiti</label>
-                        <input type="number" id="num-guests" min="1" value="1" required class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                    </div>
-                    <div class="flex flex-col">
-                        <label for="daily-rate" class="text-sm font-medium text-gray-600 mb-1">Tariffa Giornaliera (€)</label>
-                        <input type="number" id="daily-rate" min="0" value="0" required class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                    </div>
-                    <div class="flex flex-col">
-                        <label for="checkin-date" class="text-sm font-medium text-gray-600 mb-1">Data Check-in</label>
-                        <input type="date" id="checkin-date" required class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                    </div>
-                    <div class="flex flex-col">
-                        <label for="checkout-date" class="text-sm font-medium text-gray-600 mb-1">Data Check-out</label>
-                        <input type="date" id="checkout-date" required class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                    </div>
-                    <div class="flex flex-col">
-                        <label for="discount-rate" class="text-sm font-medium text-gray-600 mb-1">Sconto (%)</label>
-                        <input type="number" id="discount-rate" min="0" max="100" value="0" class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                    </div>
-                    <div class="flex flex-col">
-                        <label for="payment-status" class="text-sm font-medium text-gray-600 mb-1">Stato Pagamento</label>
-                        <select id="payment-status" class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                            <option value="non_pagato">Non Pagato</option>
-                            <option value="pagato">Pagato</option>
-                            <option value="pagato_parzialmente">Pagato Parzialmente</option>
-                        </select>
-                    </div>
-                    <div class="flex flex-col">
-                        <label for="intolerances" class="text-sm font-medium text-gray-600 mb-1">Intolleranze (per la colazione)</label>
-                        <textarea id="intolerances" rows="2" class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Es. Senza glutine, lattosio"></textarea>
-                    </div>
-                    <div class="flex items-center">
-                        <input type="checkbox" id="invoice-requested" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                        <label for="invoice-requested" class="ml-2 text-sm font-medium text-gray-600">Richiesta Fattura</label>
-                    </div>
-                    <!-- Campi aggiuntivi nascosti -->
-                    <div class="flex flex-col hidden" id="arrival-time-container">
-                        <label for="arrival-time" class="text-sm font-medium text-gray-600 mb-1">Orario di arrivo</label>
-                        <input type="time" id="arrival-time" class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                    </div>
-                    <div class="flex flex-col hidden" id="payment-method-container">
-                        <label for="payment-method" class="text-sm font-medium text-gray-600 mb-1">Metodo di Pagamento</label>
-                        <select id="payment-method" class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                            <option value="contanti">Contanti</option>
-                            <option value="carta_di_credito">Carta di Credito</option>
-                            <option value="bonifico">Bonifico</option>
-                        </select>
-                    </div>
-                    <div class="flex flex-col hidden" id="partial-payment-container">
-                        <label for="partial-payment" class="text-sm font-medium text-gray-600 mb-1">Importo Parziale (€)</label>
-                        <input type="number" id="partial-payment" min="0" value="0" class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                    </div>
-                </div>
-                <button type="submit" class="w-full mt-4 bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
-                    Aggiungi Prenotazione
-                </button>
-            </form>
-
-            <!-- Lista delle prenotazioni -->
-            <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <h2 class="text-2xl font-semibold text-gray-700 mb-4">Prenotazioni</h2>
-                <div id="bookings-list" class="space-y-4">
-                    <p class="text-gray-500 text-center">Caricamento delle prenotazioni...</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Vista: Calendario -->
-        <div id="booking-calendar-view" class="hidden">
-            <!-- Sezione principale del calendario -->
-            <div class="bg-white rounded-xl shadow-lg p-6 w-full mt-8">
-                <div class="flex items-center justify-between mb-4">
-                    <button id="prev-month" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg transition-colors">Precedente</button>
-                    <h2 id="current-month-year" class="text-xl font-semibold text-gray-700"></h2>
-                    <button id="next-month" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg transition-colors">Successivo</button>
-                </div>
-
-                <!-- Giorni della settimana -->
-                <div class="calendar-grid text-center font-bold text-sm text-gray-500 mb-2">
-                    <div>Dom</div>
-                    <div>Lun</div>
-                    <div>Mar</div>
-                    <div>Mer</div>
-                    <div>Gio</div>
-                    <div>Ven</div>
-                    <div>Sab</div>
-                </div>
-
-                <!-- Griglia del calendario -->
-                <div id="calendar-grid" class="calendar-grid">
-                    <!-- Le celle dei giorni verranno generate qui via JavaScript -->
-                </div>
-
-                <!-- Dettagli delle prenotazioni per il giorno selezionato -->
-                <div class="mt-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <h3 class="text-xl font-semibold text-gray-700 mb-2">Dettagli per la data selezionata</h3>
-                    <div id="selected-day-bookings" class="space-y-4 text-gray-600">
-                        <p class="text-center">Seleziona un giorno per vedere le prenotazioni.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
         
-        <!-- Vista: Riepilogo Dati -->
-        <div id="data-summary-view" class="hidden">
-            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Riepilogo Dati</h2>
-            <div class="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-4 mb-4">
-                <label for="summary-filter" class="text-sm font-medium text-gray-600">Seleziona Periodo:</label>
-                <select id="summary-filter" class="p-2 border border-gray-300 rounded-lg">
-                    <option value="year">Anno</option>
-                    <option value="month">Mese</option>
-                    <option value="week">Settimana</option>
-                    <option value="day">Giorno</option>
-                </select>
-                <div id="filter-inputs-container" class="flex items-center space-x-2">
-                    <!-- Gli input specifici per il filtro verranno inseriti qui da JS -->
+        <!-- Contenitore per l'autenticazione -->
+        <div id="auth-container">
+            <div id="login-view" class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-4 text-center">Accedi</h2>
+                <form id="login-form" class="space-y-4">
+                    <input type="email" id="login-email" placeholder="Email" required class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                    <input type="password" id="login-password" placeholder="Password" required class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                    <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
+                        Accedi
+                    </button>
+                </form>
+                <button id="show-register-btn" class="w-full mt-4 text-sm text-blue-600 hover:underline">Non hai un account? Registrati</button>
+            </div>
+            
+            <div id="register-view" class="p-4 bg-gray-50 rounded-lg border border-gray-200 hidden">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-4 text-center">Registrati</h2>
+                <form id="register-form" class="space-y-4">
+                    <input type="email" id="register-email" placeholder="Email" required class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                    <input type="password" id="register-password" placeholder="Password" required class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                    <button type="submit" class="w-full bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 transition-colors">
+                        Registrati
+                    </button>
+                </form>
+                <button id="show-login-btn" class="w-full mt-4 text-sm text-blue-600 hover:underline">Hai già un account? Accedi</button>
+            </div>
+        </div>
+
+        <!-- Contenitore principale dell'app, visibile solo dopo l'accesso -->
+        <div id="main-app-container" class="hidden">
+            <div class="flex justify-between items-center mb-6">
+                <p class="text-sm text-gray-500">
+                    Il tuo ID utente è: <span id="user-id" class="font-mono bg-gray-200 px-2 py-1 rounded-md text-xs">Caricamento...</span>
+                </p>
+                <button id="logout-btn" class="bg-red-500 text-white text-sm font-bold py-1 px-3 rounded-lg hover:bg-red-600 transition-colors">Logout</button>
+            </div>
+
+            <!-- Pulsanti di navigazione -->
+            <div class="flex justify-center space-x-4 mb-6">
+                <button id="show-manager-btn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">Gestione Prenotazioni</button>
+                <button id="show-calendar-btn" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors">Calendario</button>
+                <button id="show-summary-btn" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors">Riepilogo</button>
+            </div>
+
+            <!-- Vista: Gestore Prenotazioni -->
+            <div id="booking-manager-view" class="block">
+                <!-- Form per aggiungere una nuova prenotazione -->
+                <form id="booking-form" class="mb-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <h2 class="text-2xl font-semibold text-gray-700 mb-4">Aggiungi nuova prenotazione</h2>
+                    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div class="flex flex-col">
+                            <label for="guest-name" class="text-sm font-medium text-gray-600 mb-1">Nome Ospite</label>
+                            <input type="text" id="guest-name" placeholder="Es. Mario Rossi" required class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div class="flex flex-col">
+                            <label for="room-name" class="text-sm font-medium text-gray-600 mb-1">Stanza</label>
+                            <select id="room-name" required class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Seleziona una stanza</option>
+                                <option value="Malva">Malva</option>
+                                <option value="Margherita">Margherita</option>
+                                <option value="Papavero">Papavero</option>
+                                <option value="Ginestra">Ginestra</option>
+                                <option value="Camomilla">Camomilla</option>
+                                <option value="Gelsomino">Gelsomino</option>
+                            </select>
+                        </div>
+                        <div class="flex flex-col">
+                            <label for="num-guests" class="text-sm font-medium text-gray-600 mb-1">Numero Ospiti</label>
+                            <input type="number" id="num-guests" min="1" value="1" required class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div class="flex flex-col">
+                            <label for="daily-rate" class="text-sm font-medium text-gray-600 mb-1">Tariffa Giornaliera (€)</label>
+                            <input type="number" id="daily-rate" min="0" value="0" required class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div class="flex flex-col">
+                            <label for="checkin-date" class="text-sm font-medium text-gray-600 mb-1">Data Check-in</label>
+                            <input type="date" id="checkin-date" required class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div class="flex flex-col">
+                            <label for="checkout-date" class="text-sm font-medium text-gray-600 mb-1">Data Check-out</label>
+                            <input type="date" id="checkout-date" required class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div class="flex flex-col">
+                            <label for="discount-rate" class="text-sm font-medium text-gray-600 mb-1">Sconto (%)</label>
+                            <input type="number" id="discount-rate" min="0" max="100" value="0" class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div class="flex flex-col">
+                            <label for="payment-status" class="text-sm font-medium text-gray-600 mb-1">Stato Pagamento</label>
+                            <select id="payment-status" class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                                <option value="non_pagato">Non Pagato</option>
+                                <option value="pagato">Pagato</option>
+                                <option value="pagato_parzialmente">Pagato Parzialmente</option>
+                            </select>
+                        </div>
+                        <div class="flex flex-col">
+                            <label for="intolerances" class="text-sm font-medium text-gray-600 mb-1">Intolleranze (per la colazione)</label>
+                            <textarea id="intolerances" rows="2" class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Es. Senza glutine, lattosio"></textarea>
+                        </div>
+                        <div class="flex items-center">
+                            <input type="checkbox" id="invoice-requested" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                            <label for="invoice-requested" class="ml-2 text-sm font-medium text-gray-600">Richiesta Fattura</label>
+                        </div>
+                        <!-- Campi aggiuntivi nascosti -->
+                        <div class="flex flex-col hidden" id="arrival-time-container">
+                            <label for="arrival-time" class="text-sm font-medium text-gray-600 mb-1">Orario di arrivo</label>
+                            <input type="time" id="arrival-time" class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div class="flex flex-col hidden" id="payment-method-container">
+                            <label for="payment-method" class="text-sm font-medium text-gray-600 mb-1">Metodo di Pagamento</label>
+                            <select id="payment-method" class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                                <option value="contanti">Contanti</option>
+                                <option value="carta_di_credito">Carta di Credito</option>
+                                <option value="bonifico">Bonifico</option>
+                            </select>
+                        </div>
+                        <div class="flex flex-col hidden" id="partial-payment-container">
+                            <label for="partial-payment" class="text-sm font-medium text-gray-600 mb-1">Importo Parziale (€)</label>
+                            <input type="number" id="partial-payment" min="0" value="0" class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full mt-4 bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
+                        Aggiungi Prenotazione
+                    </button>
+                </form>
+
+                <!-- Lista delle prenotazioni -->
+                <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <h2 class="text-2xl font-semibold text-gray-700 mb-4">Prenotazioni</h2>
+                    <div id="bookings-list" class="space-y-4">
+                        <p class="text-gray-500 text-center">Caricamento delle prenotazioni...</p>
+                    </div>
                 </div>
             </div>
-            <div id="summary-content" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <!-- I dati verranno visualizzati qui -->
-            </div>
-            <div id="summary-extras-content" class="mt-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <h3 class="text-xl font-semibold text-gray-700 mb-4">Riepilogo Consumazioni Extra</h3>
-                <div id="extra-summary-details">
-                    <!-- Il riepilogo degli extra verrà visualizzato qui -->
+
+            <!-- Vista: Calendario -->
+            <div id="booking-calendar-view" class="hidden">
+                <!-- Sezione principale del calendario -->
+                <div class="bg-white rounded-xl shadow-lg p-6 w-full mt-8">
+                    <div class="flex items-center justify-between mb-4">
+                        <button id="prev-month" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg transition-colors">Precedente</button>
+                        <h2 id="current-month-year" class="text-xl font-semibold text-gray-700"></h2>
+                        <button id="next-month" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg transition-colors">Successivo</button>
+                    </div>
+
+                    <!-- Giorni della settimana -->
+                    <div class="calendar-grid text-center font-bold text-sm text-gray-500 mb-2">
+                        <div>Dom</div>
+                        <div>Lun</div>
+                        <div>Mar</div>
+                        <div>Mer</div>
+                        <div>Gio</div>
+                        <div>Ven</div>
+                        <div>Sab</div>
+                    </div>
+
+                    <!-- Griglia del calendario -->
+                    <div id="calendar-grid" class="calendar-grid">
+                        <!-- Le celle dei giorni verranno generate qui via JavaScript -->
+                    </div>
+
+                    <!-- Dettagli delle prenotazioni per il giorno selezionato -->
+                    <div class="mt-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <h3 class="text-xl font-semibold text-gray-700 mb-2">Dettagli per la data selezionata</h3>
+                        <div id="selected-day-bookings" class="space-y-4 text-gray-600">
+                            <p class="text-center">Seleziona un giorno per vedere le prenotazioni.</p>
+                        </div>
+                    </div>
                 </div>
             </div>
+            
+            <!-- Vista: Riepilogo Dati -->
+            <div id="data-summary-view" class="hidden">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-4">Riepilogo Dati</h2>
+                <div class="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-4 mb-4">
+                    <label for="summary-filter" class="text-sm font-medium text-gray-600">Seleziona Periodo:</label>
+                    <select id="summary-filter" class="p-2 border border-gray-300 rounded-lg">
+                        <option value="year">Anno</option>
+                        <option value="month">Mese</option>
+                        <option value="week">Settimana</option>
+                        <option value="day">Giorno</option>
+                    </select>
+                    <div id="filter-inputs-container" class="flex items-center space-x-2">
+                        <!-- Gli input specifici per il filtro verranno inseriti qui da JS -->
+                    </div>
+                </div>
+                <div id="summary-content" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- I dati verranno visualizzati qui -->
+                </div>
+                <div id="summary-extras-content" class="mt-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <h3 class="text-xl font-semibold text-gray-700 mb-4">Riepilogo Consumazioni Extra</h3>
+                    <div id="extra-summary-details">
+                        <!-- Il riepilogo degli extra verrà visualizzato qui -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modale per messaggi di conferma/errore -->
+    <div id="modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md text-center">
+            <h3 id="modal-title" class="text-lg font-bold mb-2"></h3>
+            <p id="modal-message" class="text-gray-700 mb-4"></p>
+            <div class="flex justify-center space-x-4">
+                <button id="modal-confirm" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">OK</button>
+                <button id="modal-cancel" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors">Annulla</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modale per l'aggiunta di extra -->
+    <div id="extra-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+            <h3 class="text-lg font-bold mb-4">Aggiungi Consumazione Extra</h3>
+            <form id="extra-form">
+                <div class="flex flex-col mb-4">
+                    <label for="extra-description" class="text-sm font-medium text-gray-600 mb-1">Descrizione</label>
+                    <input type="text" id="extra-description" required class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Es. Bottiglia di vino">
+                </div>
+                <div class="flex flex-col mb-4">
+                    <label for="extra-cost" class="text-sm font-medium text-gray-600 mb-1">Costo (€)</label>
+                    <input type="number" id="extra-cost" min="0" value="0" required class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <!-- Nuovo campo per la data della consumazione -->
+                <div class="flex flex-col mb-4">
+                    <label for="extra-date" class="text-sm font-medium text-gray-600 mb-1">Data Consumazione</label>
+                    <input type="date" id="extra-date" required class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="flex justify-end space-x-4">
+                    <button type="button" id="cancel-extra-btn" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors">Annulla</button>
+                    <button type="submit" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">Aggiungi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modale per il riepilogo del conto -->
+    <div id="summary-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+            <h3 class="text-lg font-bold mb-4">Riepilogo Conto</h3>
+            <div id="summary-content-modal" class="text-gray-700"></div>
+            <button id="copy-summary-btn" class="mt-4 w-full bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 transition-colors">Copia Conto</button>
+            <button id="close-summary-btn" class="mt-2 w-full bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors">Chiudi</button>
+        </div>
+    </div>
+
+    <!-- Modale per il testo generato da Gemini -->
+    <div id="gemini-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-xl">
+            <h3 id="gemini-title" class="text-lg font-bold mb-4 text-center"></h3>
+            <div id="gemini-loading" class="text-center text-blue-600 font-semibold mb-4 hidden">
+                <div class="loading-spinner mx-auto"></div>
+                Generazione in corso...
+            </div>
+            <div id="gemini-content" class="text-gray-700 whitespace-pre-wrap"></div>
+            <div class="flex justify-end space-x-4 mt-4">
+                <button id="gemini-copy-btn" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 transition-colors">Copia Testo</button>
+                <button id="gemini-close-btn" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors">Chiudi</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modale di modifica della prenotazione -->
+    <div id="edit-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+            <h3 class="text-lg font-bold mb-4">Modifica Prenotazione</h3>
+            <form id="edit-form">
+                <input type="hidden" id="edit-booking-id">
+                <div class="flex flex-col mb-4">
+                    <label for="edit-guest-name" class="text-sm font-medium text-gray-600 mb-1">Nome Ospite</label>
+                    <input type="text" id="edit-guest-name" required class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="flex flex-col mb-4">
+                    <label for="edit-room-name" class="text-sm font-medium text-gray-600 mb-1">Stanza</label>
+                    <select id="edit-room-name" required class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                        <option value="Malva">Malva</option>
+                        <option value="Margherita">Margherita</option>
+                        <option value="Papavero">Papavero</option>
+                        <option value="Ginestra">Ginestra</option>
+                        <option value="Camomilla">Camomilla</option>
+                        <option value="Gelsomino">Gelsomino</option>
+                    </select>
+                </div>
+                <div class="flex flex-col mb-4">
+                    <label for="edit-num-guests" class="text-sm font-medium text-gray-600 mb-1">Numero Ospiti</label>
+                    <input type="number" id="edit-num-guests" min="1" required class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="flex flex-col mb-4">
+                    <label for="edit-daily-rate" class="text-sm font-medium text-gray-600 mb-1">Tariffa Giornaliera (€)</label>
+                    <input type="number" id="edit-daily-rate" min="0" required class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="flex flex-col mb-4">
+                    <label for="edit-checkin-date" class="text-sm font-medium text-gray-600 mb-1">Data Check-in</label>
+                    <input type="date" id="edit-checkin-date" required class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="flex flex-col mb-4">
+                    <label for="edit-checkout-date" class="text-sm font-medium text-gray-600 mb-1">Data Check-out</label>
+                    <input type="date" id="edit-checkout-date" required class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="flex flex-col mb-4">
+                    <label for="edit-discount-rate" class="text-sm font-medium text-gray-600 mb-1">Sconto (%)</label>
+                    <input type="number" id="edit-discount-rate" min="0" max="100" class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="flex flex-col mb-4">
+                    <label for="edit-payment-status" class="text-sm font-medium text-gray-600 mb-1">Stato Pagamento</label>
+                    <select id="edit-payment-status" class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                        <option value="non_pagato">Non Pagato</option>
+                        <option value="pagato">Pagato</option>
+                        <option value="pagato_parzialmente">Pagato Parzialmente</option>
+                    </select>
+                </div>
+                <div class="flex flex-col mb-4">
+                    <label for="edit-intolerances" class="text-sm font-medium text-gray-600 mb-1">Intolleranze (per la colazione)</label>
+                    <textarea id="edit-intolerances" rows="2" class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Es. Senza glutine, lattosio"></textarea>
+                </div>
+                <div class="flex items-center mb-4">
+                    <input type="checkbox" id="edit-invoice-requested" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                    <label for="edit-invoice-requested" class="ml-2 text-sm font-medium text-gray-600">Richiesta Fattura</label>
+                </div>
+                <!-- Campi aggiuntivi di modifica nascosti -->
+                <div class="flex flex-col hidden" id="edit-payment-method-container">
+                    <label for="edit-payment-method" class="text-sm font-medium text-gray-600 mb-1">Metodo di Pagamento</label>
+                    <select id="edit-payment-method" class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                        <option value="contanti">Contanti</option>
+                        <option value="carta_di_credito">Carta di Credito</option>
+                        <option value="bonifico">Bonifico</option>
+                    </select>
+                </div>
+                <div class="flex flex-col hidden" id="edit-partial-payment-container">
+                    <label for="edit-partial-payment" class="text-sm font-medium text-gray-600 mb-1">Importo Parziale (€)</label>
+                    <input type="number" id="edit-partial-payment" min="0" class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="flex justify-end space-x-4">
+                    <button type="button" id="cancel-edit-btn" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors">Annulla</button>
+                    <button type="submit" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">Salva Modifiche</button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -392,7 +568,7 @@
     <!-- Script per Firebase e la logica dell'app -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, collection, query, onSnapshot, addDoc, updateDoc, deleteDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
         // Attiva i log per il debug di Firestore
@@ -420,6 +596,16 @@
         let isAuthReady = false;
 
         // Riferimenti agli elementi DOM
+        const authContainer = document.getElementById('auth-container');
+        const mainAppContainer = document.getElementById('main-app-container');
+        const loginView = document.getElementById('login-view');
+        const registerView = document.getElementById('register-view');
+        const loginForm = document.getElementById('login-form');
+        const registerForm = document.getElementById('register-form');
+        const showRegisterBtn = document.getElementById('show-register-btn');
+        const showLoginBtn = document.getElementById('show-login-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+
         const showManagerBtn = document.getElementById('show-manager-btn');
         const showCalendarBtn = document.getElementById('show-calendar-btn');
         const showSummaryBtn = document.getElementById('show-summary-btn');
@@ -1229,14 +1415,63 @@
             calculateAndRenderSummary();
         });
 
-        // Autenticazione e ascolto dei cambiamenti
+        // Gestione dell'autenticazione
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                showModal('Accesso Riuscito', 'Accesso effettuato con successo!');
+            } catch (error) {
+                console.error("Errore di accesso:", error);
+                showModal('Errore di Accesso', 'Credenziali non valide. Per favore, riprova.');
+            }
+        });
+
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+            try {
+                await createUserWithEmailAndPassword(auth, email, password);
+                showModal('Registrazione Riuscita', 'Account creato con successo! Puoi accedere.');
+                loginView.classList.remove('hidden');
+                registerView.classList.add('hidden');
+            } catch (error) {
+                console.error("Errore di registrazione:", error);
+                showModal('Errore di Registrazione', 'Non è stato possibile creare l\'account. Controlla la console per i dettagli.');
+            }
+        });
+
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                await signOut(auth);
+                showModal('Disconnessione', 'Disconnessione effettuata con successo.');
+            } catch (error) {
+                console.error("Errore di logout:", error);
+                showModal('Errore', 'Non è stato possibile disconnettersi.');
+            }
+        });
+
+        showRegisterBtn.addEventListener('click', () => {
+            loginView.classList.add('hidden');
+            registerView.classList.remove('hidden');
+        });
+
+        showLoginBtn.addEventListener('click', () => {
+            loginView.classList.remove('hidden');
+            registerView.classList.add('hidden');
+        });
+
         onAuthStateChanged(auth, async (user) => {
             try {
                 if (user) {
                     userId = user.uid;
                     userIdSpan.textContent = userId;
+                    authContainer.classList.add('hidden');
+                    mainAppContainer.classList.remove('hidden');
 
-                    // Aggiorna la logica per la collezione privata
                     const bookingsRef = collection(db, `artifacts/${appId}/users/${userId}/bookings`);
                     const q = query(bookingsRef);
                     onSnapshot(q, (querySnapshot) => {
@@ -1244,7 +1479,6 @@
                         querySnapshot.forEach((doc) => {
                             allBookings.push({ id: doc.id, ...doc.data() });
                         });
-                        // Ordina per data di check-in (il più vecchio per primo)
                         allBookings.sort((a, b) => new Date(a.checkInDate) - new Date(b.checkInDate));
                         
                         renderBookingsList(allBookings);
@@ -1254,13 +1488,12 @@
                         console.error("Errore onSnapshot:", error);
                         showModal('Errore di Connessione', 'Non è stato possibile connettersi al database in tempo reale.');
                     });
-
                 } else {
-                    if (initialAuthToken) {
-                        await signInWithCustomToken(auth, initialAuthToken);
-                    } else {
-                        await signInAnonymously(auth);
-                    }
+                    userId = null;
+                    authContainer.classList.remove('hidden');
+                    mainAppContainer.classList.add('hidden');
+                    // Se l'utente non è loggato, mostra solo la lista vuota.
+                    bookingsList.innerHTML = `<p class="text-gray-500 text-center">Accedi per visualizzare le prenotazioni.</p>`;
                 }
             } catch (error) {
                 console.error("Errore di autenticazione:", error);
@@ -1396,4 +1629,4 @@
     </script>
 </body>
 </html>
-new version
+versione nuova

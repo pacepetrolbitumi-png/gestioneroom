@@ -1433,6 +1433,19 @@
                     showModal('Errore di Connessione', 'Non è stato possibile connettersi al database in tempo reale per le prenotazioni.');
                 });
 
+                // Gestione dell'autenticazione iniziale
+                if (initialAuthToken) {
+                    try {
+                        await signInWithCustomToken(auth, initialAuthToken);
+                    } catch (error) {
+                        console.error("Errore signInWithCustomToken:", error);
+                        // In caso di errore, si continua con l'autenticazione anonima
+                        await signInAnonymously(auth);
+                    }
+                } else {
+                    await signInAnonymously(auth);
+                }
+
             } else {
                 userId = null;
                 authContainer.classList.remove('hidden');
@@ -1511,4 +1524,4 @@
     </script>
 </body>
 </html>
-abc
+boo

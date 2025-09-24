@@ -229,13 +229,13 @@
 
                     <!-- Giorni della settimana -->
                     <div class="calendar-grid text-center font-bold text-sm text-gray-500 mb-2">
-                        <div>Dom</div>
                         <div>Lun</div>
                         <div>Mar</div>
                         <div>Mer</div>
                         <div>Gio</div>
                         <div>Ven</div>
                         <div>Sab</div>
+                        <div>Dom</div>
                     </div>
 
                     <!-- Griglia del calendario -->
@@ -278,148 +278,6 @@
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <!-- Modale per messaggi di conferma/errore -->
-    <div id="modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
-        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md text-center">
-            <h3 id="modal-title" class="text-lg font-bold mb-2"></h3>
-            <p id="modal-message" class="text-gray-700 mb-4"></p>
-            <div class="flex justify-center space-x-4">
-                <button id="modal-confirm" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">OK</button>
-                <button id="modal-cancel" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors">Annulla</button>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Modale per l'aggiunta di extra -->
-    <div id="extra-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
-        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
-            <h3 class="text-lg font-bold mb-4">Aggiungi Consumazione Extra</h3>
-            <form id="extra-form">
-                <div class="flex flex-col mb-4">
-                    <label for="extra-description" class="text-sm font-medium text-gray-600 mb-1">Descrizione</label>
-                    <input type="text" id="extra-description" required class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Es. Bottiglia di vino">
-                </div>
-                <div class="flex flex-col mb-4">
-                    <label for="extra-cost" class="text-sm font-medium text-gray-600 mb-1">Costo (€)</label>
-                    <input type="number" id="extra-cost" min="0" value="0" required class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                </div>
-                <!-- Nuovo campo per la data della consumazione -->
-                <div class="flex flex-col mb-4">
-                    <label for="extra-date" class="text-sm font-medium text-gray-600 mb-1">Data Consumazione</label>
-                    <input type="date" id="extra-date" required class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                </div>
-                <div class="flex justify-end space-x-4">
-                    <button type="button" id="cancel-extra-btn" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors">Annulla</button>
-                    <button type="submit" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">Aggiungi</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Modale per il riepilogo del conto -->
-    <div id="summary-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
-        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
-            <h3 class="text-lg font-bold mb-4">Riepilogo Conto</h3>
-            <div id="summary-content-modal" class="text-gray-700"></div>
-            <button id="copy-summary-btn" class="mt-4 w-full bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 transition-colors">Copia Conto</button>
-            <button id="close-summary-btn" class="mt-2 w-full bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors">Chiudi</button>
-        </div>
-    </div>
-
-    <!-- Modale per il testo generato da Gemini -->
-    <div id="gemini-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
-        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-xl">
-            <h3 id="gemini-title" class="text-lg font-bold mb-4 text-center"></h3>
-            <div id="gemini-loading" class="text-center text-blue-600 font-semibold mb-4 hidden">
-                <div class="loading-spinner mx-auto"></div>
-                Generazione in corso...
-            </div>
-            <div id="gemini-content" class="text-gray-700 whitespace-pre-wrap"></div>
-            <div class="flex justify-end space-x-4 mt-4">
-                <button id="gemini-copy-btn" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 transition-colors">Copia Testo</button>
-                <button id="gemini-close-btn" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors">Chiudi</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modale di modifica della prenotazione -->
-    <div id="edit-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
-        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
-            <h3 class="text-lg font-bold mb-4">Modifica Prenotazione</h3>
-            <form id="edit-form">
-                <input type="hidden" id="edit-booking-id">
-                <div class="flex flex-col mb-4">
-                    <label for="edit-guest-name" class="text-sm font-medium text-gray-600 mb-1">Nome Ospite</label>
-                    <input type="text" id="edit-guest-name" required class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                </div>
-                <div class="flex flex-col mb-4">
-                    <label for="edit-room-name" class="text-sm font-medium text-gray-600 mb-1">Stanza</label>
-                    <select id="edit-room-name" required class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                        <option value="Malva">Malva</option>
-                        <option value="Margherita">Margherita</option>
-                        <option value="Papavero">Papavero</option>
-                        <option value="Ginestra">Ginestra</option>
-                        <option value="Camomilla">Camomilla</option>
-                        <option value="Gelsomino">Gelsomino</option>
-                    </select>
-                </div>
-                <div class="flex flex-col mb-4">
-                    <label for="edit-num-guests" class="text-sm font-medium text-gray-600 mb-1">Numero Ospiti</label>
-                    <input type="number" id="edit-num-guests" min="1" required class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                </div>
-                <div class="flex flex-col mb-4">
-                    <label for="edit-daily-rate" class="text-sm font-medium text-gray-600 mb-1">Tariffa Giornaliera (€)</label>
-                    <input type="number" id="edit-daily-rate" min="0" required class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                </div>
-                <div class="flex flex-col mb-4">
-                    <label for="edit-checkin-date" class="text-sm font-medium text-gray-600 mb-1">Data Check-in</label>
-                    <input type="date" id="edit-checkin-date" required class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                </div>
-                <div class="flex flex-col mb-4">
-                    <label for="edit-checkout-date" class="text-sm font-medium text-gray-600 mb-1">Data Check-out</label>
-                    <input type="date" id="edit-checkout-date" required class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                </div>
-                <div class="flex flex-col mb-4">
-                    <label for="edit-discount-rate" class="text-sm font-medium text-gray-600 mb-1">Sconto (%)</label>
-                    <input type="number" id="edit-discount-rate" min="0" max="100" class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                </div>
-                <div class="flex flex-col mb-4">
-                    <label for="edit-payment-status" class="text-sm font-medium text-gray-600 mb-1">Stato Pagamento</label>
-                    <select id="edit-payment-status" class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                        <option value="non_pagato">Non Pagato</option>
-                        <option value="pagato">Pagato</option>
-                        <option value="pagato_parzialmente">Pagato Parzialmente</option>
-                    </select>
-                </div>
-                <div class="flex flex-col mb-4">
-                    <label for="edit-intolerances" class="text-sm font-medium text-gray-600 mb-1">Intolleranze (per la colazione)</label>
-                    <textarea id="edit-intolerances" rows="2" class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Es. Senza glutine, lattosio"></textarea>
-                </div>
-                <div class="flex items-center mb-4">
-                    <input type="checkbox" id="edit-invoice-requested" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                    <label for="edit-invoice-requested" class="ml-2 text-sm font-medium text-gray-600">Richiesta Fattura</label>
-                </div>
-                <!-- Campi aggiuntivi di modifica nascosti -->
-                <div class="flex flex-col hidden" id="edit-payment-method-container">
-                    <label for="edit-payment-method" class="text-sm font-medium text-gray-600 mb-1">Metodo di Pagamento</label>
-                    <select id="edit-payment-method" class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                        <option value="contanti">Contanti</option>
-                        <option value="carta_di_credito">Carta di Credito</option>
-                        <option value="bonifico">Bonifico</option>
-                    </select>
-                </div>
-                <div class="flex flex-col hidden" id="edit-partial-payment-container">
-                    <label for="edit-partial-payment" class="text-sm font-medium text-gray-600 mb-1">Importo Parziale (€)</label>
-                    <input type="number" id="edit-partial-payment" min="0" class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                </div>
-                <div class="flex justify-end space-x-4">
-                    <button type="button" id="cancel-edit-btn" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors">Annulla</button>
-                    <button type="submit" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">Salva Modifiche</button>
-                </div>
-            </form>
         </div>
     </div>
 
@@ -1092,8 +950,10 @@
             const lastDayOfMonth = new Date(year, month + 1, 0);
             
             let startDay = firstDayOfMonth.getDay();
-            if (startDay === 0) startDay = 7;
-            for (let i = 1; i < startDay; i++) {
+            if (startDay === 0) startDay = 6; // La domenica è l'ultimo giorno, quindi lo impostiamo a 6
+            else startDay -= 1; // Spostiamo l'inizio della settimana al lunedì
+            
+            for (let i = 0; i < startDay; i++) {
                 const emptyCell = document.createElement('div');
                 emptyCell.className = 'day-cell';
                 calendarGridEl.appendChild(emptyCell);
@@ -1629,4 +1489,4 @@
     </script>
 </body>
 </html>
-versione nuova
+versione last

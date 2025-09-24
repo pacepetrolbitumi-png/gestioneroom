@@ -128,7 +128,6 @@
                 <button id="show-manager-btn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">Gestione Prenotazioni</button>
                 <button id="show-calendar-btn" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors">Calendario</button>
                 <button id="show-summary-btn" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors">Riepilogo</button>
-                <button id="show-archive-btn" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors">Archivio</button>
             </div>
 
             <!-- Vista: Gestore Prenotazioni -->
@@ -219,7 +218,6 @@
                 <!-- Lista delle prenotazioni -->
                 <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
                     <h2 class="text-2xl font-semibold text-gray-700 mb-4">Prenotazioni in corso</h2>
-                    <button id="archive-past-btn" class="bg-red-500 text-white text-sm font-bold py-1 px-3 rounded-lg hover:bg-red-600 transition-colors mb-4">Archivia Prenotazioni Passate</button>
                     <div id="bookings-list" class="space-y-4">
                         <p class="text-gray-500 text-center">Caricamento delle prenotazioni...</p>
                     </div>
@@ -285,14 +283,6 @@
                     <div id="extra-summary-details">
                         <!-- Il riepilogo degli extra verrà visualizzato qui -->
                     </div>
-                </div>
-            </div>
-
-            <!-- Vista: Archivio Prenotazioni -->
-            <div id="archive-view" class="hidden">
-                <h2 class="text-2xl font-semibold text-gray-700 mb-4">Archivio Prenotazioni</h2>
-                <div id="archived-bookings-list" class="space-y-4">
-                    <p class="text-gray-500 text-center">Caricamento dell'archivio...</p>
                 </div>
             </div>
         </div>
@@ -452,7 +442,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, collection, query, onSnapshot, addDoc, updateDoc, deleteDoc, setLogLevel, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, collection, query, onSnapshot, addDoc, updateDoc, deleteDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
         // Attiva i log per il debug di Firestore
         setLogLevel('debug');
@@ -492,15 +482,12 @@
         const showManagerBtn = document.getElementById('show-manager-btn');
         const showCalendarBtn = document.getElementById('show-calendar-btn');
         const showSummaryBtn = document.getElementById('show-summary-btn');
-        const showArchiveBtn = document.getElementById('show-archive-btn');
         const managerView = document.getElementById('booking-manager-view');
         const calendarView = document.getElementById('booking-calendar-view');
         const summaryView = document.getElementById('data-summary-view');
-        const archiveView = document.getElementById('archive-view');
-
+        
         const bookingForm = document.getElementById('booking-form');
         const bookingsList = document.getElementById('bookings-list');
-        const archivedBookingsList = document.getElementById('archived-bookings-list');
         const userIdSpan = document.getElementById('user-id');
         const modal = document.getElementById('modal');
         const modalTitle = document.getElementById('modal-title');
@@ -558,7 +545,6 @@
         const summaryExtrasContainer = document.getElementById('extra-summary-details');
 
         let allBookings = [];
-        let allArchivedBookings = [];
         let currentMonth = new Date();
         const monthNames = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];
 
@@ -649,7 +635,7 @@
 
         // Funzioni per la vista Gestione Prenotazioni
         const renderBookingsList = (bookings, isArchived = false) => {
-            const listEl = isArchived ? archivedBookingsList : bookingsList;
+            const listEl = bookingsList;
             if (bookings.length === 0) {
                 listEl.innerHTML = `<p class="text-center text-gray-500">Nessuna prenotazione trovata.</p>`;
                 return;
@@ -684,7 +670,7 @@
                 }
 
                 const bookingEl = document.createElement('div');
-                bookingEl.className = `flex flex-col md:flex-row items-start md:items-center justify-between p-4 border border-gray-200 rounded-lg shadow-sm ${isArchived ? 'archived-booking' : ''}`;
+                bookingEl.className = `flex flex-col md:flex-row items-start md:items-center justify-between p-4 border border-gray-200 rounded-lg shadow-sm`;
                 bookingEl.innerHTML = `
                     <div class="flex-grow mb-2 md:mb-0">
                         <h3 class="text-lg font-bold text-gray-800">${booking.guestName}</h3>
@@ -724,7 +710,7 @@
             document.querySelectorAll('.summary-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     const bookingId = e.target.dataset.id;
-                    const booking = allBookings.find(b => b.id === bookingId) || allArchivedBookings.find(b => b.id === bookingId);
+                    const booking = allBookings.find(b => b.id === bookingId);
                     if (booking) {
                         showSummaryModal(booking);
                     }
@@ -734,7 +720,7 @@
             document.querySelectorAll('.gemini-email-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     const bookingId = e.target.dataset.id;
-                    const booking = allBookings.find(b => b.id === bookingId) || allArchivedBookings.find(b => b.id === bookingId);
+                    const booking = allBookings.find(b => b.id === bookingId);
                     if (booking) {
                         generateEmail(booking);
                     }
@@ -787,7 +773,7 @@
                     const confirmDelete = await showModal('Elimina Prenotazione', 'Sei sicuro di voler eliminare questa prenotazione?', true);
                     if (confirmDelete) {
                         try {
-                            const collectionPath = isArchived ? `artifacts/${appId}/users/${userId}/archived_bookings` : `artifacts/${appId}/users/${userId}/bookings`;
+                            const collectionPath = `artifacts/${appId}/users/${userId}/bookings`;
                             await deleteDoc(doc(db, collectionPath, id));
                             showModal('Successo', 'Prenotazione eliminata con successo.');
                         } catch (error) {
@@ -798,52 +784,6 @@
                 });
             });
         };
-
-        // Funzione per archiviare le prenotazioni passate
-        const archivePastBookings = async () => {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-
-            const pastBookings = allBookings.filter(booking => {
-                const checkOut = new Date(booking.checkOutDate + 'T00:00:00');
-                return checkOut < today;
-            });
-            
-            if (pastBookings.length === 0) {
-                showModal('Nessuna Prenotazione da Archiviare', 'Non ci sono prenotazioni passate da archiviare.');
-                return;
-            }
-
-            const confirmArchive = await showModal(
-                'Archivia Prenotazioni',
-                `Sei sicuro di voler archiviare ${pastBookings.length} prenotazioni passate?`,
-                true
-            );
-
-            if (confirmArchive) {
-                const batch = writeBatch(db);
-                const activeBookingsRef = collection(db, `artifacts/${appId}/users/${userId}/bookings`);
-                const archivedBookingsRef = collection(db, `artifacts/${appId}/users/${userId}/archived_bookings`);
-
-                try {
-                    pastBookings.forEach(booking => {
-                        const activeDocRef = doc(activeBookingsRef, booking.id);
-                        const archivedDocRef = doc(archivedBookingsRef);
-                        
-                        batch.set(archivedDocRef, booking);
-                        batch.delete(activeDocRef);
-                    });
-
-                    await batch.commit();
-                    showModal('Archiviazione Completata', `${pastBookings.length} prenotazioni sono state archiviate con successo.`);
-                } catch (error) {
-                    console.error("Errore durante l'archiviazione:", error);
-                    showModal('Errore', 'Si è verificato un errore durante l\'archiviazione. Controlla la console per i dettagli.');
-                }
-            }
-        };
-
-        archivePastBtn.addEventListener('click', archivePastBookings);
 
         // Gestione dell'invio del modulo di modifica
         editForm.addEventListener('submit', async (e) => {
@@ -981,12 +921,12 @@
                 return;
             }
 
-            const bookingToUpdate = allBookings.find(b => b.id === bookingId) || allArchivedBookings.find(b => b.id === bookingId);
+            const bookingToUpdate = allBookings.find(b => b.id === bookingId);
             const updatedExtras = [...(bookingToUpdate.extras || []), { description, cost, date }];
 
             try {
                 // Aggiorna la logica per la collezione privata
-                const collectionPath = document.querySelector('#booking-manager-view').classList.contains('hidden') ? `artifacts/${appId}/users/${userId}/archived_bookings` : `artifacts/${appId}/users/${userId}/bookings`;
+                const collectionPath = `artifacts/${appId}/users/${userId}/bookings`;
                 await updateDoc(doc(db, collectionPath, bookingId), { extras: updatedExtras });
                 extraModal.classList.add('hidden');
                 extraForm.reset();
@@ -1193,7 +1133,7 @@
                 }
             }
 
-            const allRelevantBookings = [...allBookings, ...allArchivedBookings];
+            const allRelevantBookings = [...allBookings];
 
             if (!allRelevantBookings || allRelevantBookings.length === 0) {
                 summaryDataContainer.innerHTML = `<p class="text-center text-gray-500 col-span-full">Nessun dato disponibile per il riepilogo.</p>`;
@@ -1409,13 +1349,13 @@
         });
 
         const showView = (viewId) => {
-            const views = [managerView, calendarView, summaryView, archiveView];
+            const views = [managerView, calendarView, summaryView];
             views.forEach(view => {
                 view.classList.add('hidden');
             });
             document.getElementById(viewId).classList.remove('hidden');
 
-            const navButtons = [showManagerBtn, showCalendarBtn, showSummaryBtn, showArchiveBtn];
+            const navButtons = [showManagerBtn, showCalendarBtn, showSummaryBtn];
             navButtons.forEach(btn => {
                 btn.classList.replace('bg-blue-600', 'bg-gray-300');
                 btn.classList.replace('text-white', 'text-gray-800');
@@ -1439,11 +1379,6 @@
             calculateAndRenderSummary();
         });
         
-        showArchiveBtn.addEventListener('click', () => {
-            showView('archive-view');
-        });
-        
-        // Funzione per calcolare la settimana dell'anno
         Date.prototype.getWeek = function() {
             const date = new Date(this.getTime());
             date.setHours(0, 0, 0, 0);
@@ -1452,7 +1387,6 @@
             return 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
         };
         
-        // Inizializza i campi di input del filtro al caricamento
         window.addEventListener('DOMContentLoaded', () => {
             updateFilterInputs(summaryFilterSelect.value);
         });
@@ -1465,34 +1399,15 @@
                 mainAppContainer.classList.remove('hidden');
 
                 const bookingsRef = collection(db, `artifacts/${appId}/users/${userId}/bookings`);
-                const archivedBookingsRef = collection(db, `artifacts/${appId}/users/${userId}/archived_bookings`);
 
                 onSnapshot(bookingsRef, async (querySnapshot) => {
                     const today = new Date();
                     today.setHours(0, 0, 0, 0);
                     allBookings = [];
-                    const pastBookingsToArchive = [];
-
                     querySnapshot.forEach((doc) => {
-                        const bookingData = { id: doc.id, ...doc.data() };
-                        if (new Date(bookingData.checkOutDate) < today) {
-                            pastBookingsToArchive.push(bookingData);
-                        } else {
-                            allBookings.push(bookingData);
-                        }
+                        allBookings.push({ id: doc.id, ...doc.data() });
                     });
-
-                    if (pastBookingsToArchive.length > 0) {
-                        const batch = writeBatch(db);
-                        pastBookingsToArchive.forEach(booking => {
-                            const activeDocRef = doc(bookingsRef, booking.id);
-                            const archivedDocRef = doc(archivedBookingsRef);
-                            batch.set(archivedDocRef, booking);
-                            batch.delete(activeDocRef);
-                        });
-                        await batch.commit();
-                    }
-
+                    
                     allBookings.sort((a, b) => new Date(a.checkInDate) - new Date(b.checkInDate));
                     renderBookingsList(allBookings);
                     renderCalendar();
@@ -1502,22 +1417,6 @@
                     showModal('Errore di Connessione', 'Non è stato possibile connettersi al database in tempo reale per le prenotazioni.');
                 });
 
-                onSnapshot(archivedBookingsRef, (querySnapshot) => {
-                    allArchivedBookings = [];
-                    querySnapshot.forEach((doc) => {
-                        allArchivedBookings.push({ id: doc.id, ...doc.data() });
-                    });
-                    allArchivedBookings.sort((a, b) => new Date(a.checkInDate) - new Date(b.checkInDate));
-                    if (!archiveView.classList.contains('hidden')) {
-                        renderBookingsList(allArchivedBookings, true);
-                    }
-                    if (!summaryView.classList.contains('hidden')) {
-                        calculateAndRenderSummary();
-                    }
-                }, (error) => {
-                    console.error("Errore onSnapshot archivio:", error);
-                    showModal('Errore di Connessione', 'Non è stato possibile connettersi al database in tempo reale per l\'archivio.');
-                });
             } else {
                 userId = null;
                 authContainer.classList.remove('hidden');
@@ -1568,7 +1467,7 @@
             }
 
             try {
-                const collectionPath = new Date(newBooking.checkOutDate) < new Date().setHours(0,0,0,0) ? `artifacts/${appId}/users/${userId}/archived_bookings` : `artifacts/${appId}/users/${userId}/bookings`;
+                const collectionPath = `artifacts/${appId}/users/${userId}/bookings`;
                 await addDoc(collection(db, collectionPath), newBooking);
                 showModal('Prenotazione Aggiunta', 'La prenotazione è stata aggiunta con successo!');
                 bookingForm.reset();
@@ -1581,7 +1480,6 @@
         showManagerBtn.addEventListener('click', () => showView('booking-manager-view'));
         showCalendarBtn.addEventListener('click', () => { showView('booking-calendar-view'); renderCalendar(); });
         showSummaryBtn.addEventListener('click', () => { showView('data-summary-view'); updateFilterInputs(summaryFilterSelect.value); calculateAndRenderSummary(); });
-        showArchiveBtn.addEventListener('click', () => { showView('archive-view'); renderBookingsList(allArchivedBookings, true); });
         
         Date.prototype.getWeek = function() {
             const date = new Date(this.getTime());
@@ -1597,4 +1495,4 @@
     </script>
 </body>
 </html>
-verlast
+last

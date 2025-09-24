@@ -492,15 +492,15 @@
         const showManagerBtn = document.getElementById('show-manager-btn');
         const showCalendarBtn = document.getElementById('show-calendar-btn');
         const showSummaryBtn = document.getElementById('show-summary-btn');
-        const showArchiveBtn = document.getElementById('show-archive-btn'); // Nuovo pulsante
+        const showArchiveBtn = document.getElementById('show-archive-btn');
         const managerView = document.getElementById('booking-manager-view');
         const calendarView = document.getElementById('booking-calendar-view');
         const summaryView = document.getElementById('data-summary-view');
-        const archiveView = document.getElementById('archive-view'); // Nuova vista
+        const archiveView = document.getElementById('archive-view');
 
         const bookingForm = document.getElementById('booking-form');
         const bookingsList = document.getElementById('bookings-list');
-        const archivedBookingsList = document.getElementById('archived-bookings-list'); // Nuova lista
+        const archivedBookingsList = document.getElementById('archived-bookings-list');
         const userIdSpan = document.getElementById('user-id');
         const modal = document.getElementById('modal');
         const modalTitle = document.getElementById('modal-title');
@@ -524,7 +524,6 @@
         const geminiLoading = document.getElementById('gemini-loading');
         const geminiCopyBtn = document.getElementById('gemini-copy-btn');
         const geminiCloseBtn = document.getElementById('gemini-close-btn');
-        const archivePastBtn = document.getElementById('archive-past-btn'); // Nuovo pulsante
         
         const editModal = document.getElementById('edit-modal');
         const editForm = document.getElementById('edit-form');
@@ -1427,7 +1426,6 @@
 
         showManagerBtn.addEventListener('click', () => {
             showView('booking-manager-view');
-            renderBookingsList(allBookings.filter(b => new Date(b.checkOutDate) >= new Date().setHours(0,0,0,0)));
         });
 
         showCalendarBtn.addEventListener('click', () => {
@@ -1441,172 +1439,6 @@
             calculateAndRenderSummary();
         });
         
-        showArchiveBtn.addEventListener('click', () => {
-            showView('archive-view');
-            renderBookingsList(allArchivedBookings, true);
-        });
-
-        onAuthStateChanged(auth, async (user) => {
-            try {
-                if (user) {
-                    userId = user.uid;
-                    userIdSpan.textContent = userId;
-                    authContainer.classList.add('hidden');
-                    mainAppContainer.classList.remove('hidden');
-
-                    const bookingsRef = collection(db, `artifacts/${appId}/users/${userId}/bookings`);
-                    const archivedBookingsRef = collection(db, `artifacts/${appId}/users/${userId}/archived_bookings`);
-                    
-                    onSnapshot(bookingsRef, async (querySnapshot) => {
-                        const today = new Date();
-                        today.setHours(0,0,0,0);
-                        allBookings = [];
-                        const pastBookingsToArchive = [];
-
-                        querySnapshot.forEach((doc) => {
-                            const bookingData = { id: doc.id, ...doc.data() };
-                            if (new Date(bookingData.checkOutDate) < today) {
-                                pastBookingsToArchive.push(bookingData);
-                            } else {
-                                allBookings.push(bookingData);
-                            }
-                        });
-
-                        if (pastBookingsToArchive.length > 0) {
-                            const batch = writeBatch(db);
-                            pastBookingsToArchive.forEach(booking => {
-                                const activeDocRef = doc(bookingsRef, booking.id);
-                                const archivedDocRef = doc(archivedBookingsRef);
-                                batch.set(archivedDocRef, booking);
-                                batch.delete(activeDocRef);
-                            });
-                            await batch.commit();
-                        }
-
-                        allBookings.sort((a, b) => new Date(a.checkInDate) - new Date(b.checkInDate));
-                        renderBookingsList(allBookings);
-                        renderCalendar();
-                        calculateAndRenderSummary();
-                    }, (error) => {
-                        console.error("Errore onSnapshot prenotazioni:", error);
-                        showModal('Errore di Connessione', 'Non è stato possibile connettersi al database in tempo reale per le prenotazioni.');
-                    });
-                    
-                    onSnapshot(archivedBookingsRef, (querySnapshot) => {
-                        allArchivedBookings = [];
-                        querySnapshot.forEach((doc) => {
-                            allArchivedBookings.push({ id: doc.id, ...doc.data() });
-                        });
-                        allArchivedBookings.sort((a, b) => new Date(a.checkInDate) - new Date(b.checkInDate));
-                        if (!archiveView.classList.contains('hidden')) {
-                            renderBookingsList(allArchivedBookings, true);
-                        }
-                    }, (error) => {
-                        console.error("Errore onSnapshot archivio:", error);
-                        showModal('Errore di Connessione', 'Non è stato possibile connettersi al database in tempo reale per l\'archivio.');
-                    });
-
-                } else {
-                    userId = null;
-                    authContainer.classList.remove('hidden');
-                    mainAppContainer.classList.add('hidden');
-                    bookingsList.innerHTML = `<p class="text-gray-500 text-center">Accedi per visualizzare le prenotazioni.</p>`;
-                }
-            } catch (error) {
-                console.error("Errore di autenticazione:", error);
-                showModal('Errore di Autenticazione', 'Non è stato possibile autenticare l\'utente. Ricarica la pagina.');
-            }
-        });
-
-        // Gestione dell'invio del modulo
-        bookingForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            const guestName = document.getElementById('guest-name').value;
-            const roomName = document.getElementById('room-name').value;
-            const numGuests = parseInt(document.getElementById('num-guests').value, 10);
-            const dailyRate = parseFloat(document.getElementById('daily-rate').value);
-            const discountRate = parseFloat(document.getElementById('discount-rate').value);
-            const checkInDate = document.getElementById('checkin-date').value;
-            const checkOutDate = document.getElementById('checkout-date').value;
-            const arrivalTime = document.getElementById('arrival-time').value;
-            const intolerances = document.getElementById('intolerances').value;
-            const notes = document.getElementById('notes').value;
-            const paymentStatus = document.getElementById('payment-status').value;
-            const paymentMethod = (paymentStatus === 'pagato') ? document.getElementById('payment-method').value : null;
-            const partialPaymentAmount = (paymentStatus === 'pagato_parzialmente') ? parseFloat(document.getElementById('partial-payment').value) : null;
-            const invoiceRequested = document.getElementById('invoice-requested').checked;
-
-            // Semplice validazione
-            if (new Date(checkOutDate) <= new Date(checkInDate)) {
-                showModal('Errore di Data', 'La data di check-out deve essere successiva alla data di check-in.');
-                return;
-            }
-
-            // Aggiungo il controllo di disponibilità
-            const checkIn = new Date(checkInDate + 'T00:00:00');
-            const checkOut = new Date(checkOutDate + 'T00:00:00');
-            
-            let isRoomOccupied = allBookings.some(booking => {
-                const existingCheckIn = new Date(booking.checkInDate + 'T00:00:00');
-                const existingCheckOut = new Date(booking.checkOutDate + 'T00:00:00');
-                
-                // Controlla se gli intervalli si sovrappongono
-                const isOverlapping = (checkIn < existingCheckOut && existingCheckIn < checkOut);
-                
-                return isOverlapping && booking.roomName === roomName;
-            });
-
-            if (isRoomOccupied) {
-                showModal('Errore', `La stanza ${roomName} è già prenotata per questo periodo.`);
-                return;
-            }
-
-            const newBooking = {
-                guestName,
-                roomName,
-                numGuests,
-                dailyRate,
-                discountRate,
-                checkInDate,
-                checkOutDate,
-                arrivalTime,
-                intolerances,
-                notes,
-                paymentStatus,
-                paymentMethod,
-                partialPaymentAmount,
-                invoiceRequested,
-                extras: [],
-                createdAt: new Date()
-            };
-
-            try {
-                await addDoc(collection(db, `artifacts/${appId}/users/${userId}/bookings`), newBooking);
-                showModal('Prenotazione Aggiunta', 'La prenotazione è stata aggiunta con successo!');
-                bookingForm.reset();
-            } catch (error) {
-                console.error("Errore durante l'aggiunta della prenotazione:", error);
-                showModal('Errore', 'Non è stato possibile aggiungere la prenotazione. Controlla la console per i dettagli.');
-            }
-        });
-        
-        // Gestione della visibilità delle viste
-        showManagerBtn.addEventListener('click', () => {
-            showView('booking-manager-view');
-        });
-
-        showCalendarBtn.addEventListener('click', () => {
-            showView('booking-calendar-view');
-            renderCalendar();
-        });
-        
-        showSummaryBtn.addEventListener('click', () => {
-            showView('data-summary-view');
-            updateFilterInputs(summaryFilterSelect.value);
-            calculateAndRenderSummary();
-        });
-
         showArchiveBtn.addEventListener('click', () => {
             showView('archive-view');
         });
@@ -1624,7 +1456,145 @@
         window.addEventListener('DOMContentLoaded', () => {
             updateFilterInputs(summaryFilterSelect.value);
         });
+        
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                userId = user.uid;
+                userIdSpan.textContent = userId;
+                authContainer.classList.add('hidden');
+                mainAppContainer.classList.remove('hidden');
+
+                const bookingsRef = collection(db, `artifacts/${appId}/users/${userId}/bookings`);
+                const archivedBookingsRef = collection(db, `artifacts/${appId}/users/${userId}/archived_bookings`);
+
+                onSnapshot(bookingsRef, async (querySnapshot) => {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    allBookings = [];
+                    const pastBookingsToArchive = [];
+
+                    querySnapshot.forEach((doc) => {
+                        const bookingData = { id: doc.id, ...doc.data() };
+                        if (new Date(bookingData.checkOutDate) < today) {
+                            pastBookingsToArchive.push(bookingData);
+                        } else {
+                            allBookings.push(bookingData);
+                        }
+                    });
+
+                    if (pastBookingsToArchive.length > 0) {
+                        const batch = writeBatch(db);
+                        pastBookingsToArchive.forEach(booking => {
+                            const activeDocRef = doc(bookingsRef, booking.id);
+                            const archivedDocRef = doc(archivedBookingsRef);
+                            batch.set(archivedDocRef, booking);
+                            batch.delete(activeDocRef);
+                        });
+                        await batch.commit();
+                    }
+
+                    allBookings.sort((a, b) => new Date(a.checkInDate) - new Date(b.checkInDate));
+                    renderBookingsList(allBookings);
+                    renderCalendar();
+                    calculateAndRenderSummary();
+                }, (error) => {
+                    console.error("Errore onSnapshot prenotazioni:", error);
+                    showModal('Errore di Connessione', 'Non è stato possibile connettersi al database in tempo reale per le prenotazioni.');
+                });
+
+                onSnapshot(archivedBookingsRef, (querySnapshot) => {
+                    allArchivedBookings = [];
+                    querySnapshot.forEach((doc) => {
+                        allArchivedBookings.push({ id: doc.id, ...doc.data() });
+                    });
+                    allArchivedBookings.sort((a, b) => new Date(a.checkInDate) - new Date(b.checkInDate));
+                    if (!archiveView.classList.contains('hidden')) {
+                        renderBookingsList(allArchivedBookings, true);
+                    }
+                    if (!summaryView.classList.contains('hidden')) {
+                        calculateAndRenderSummary();
+                    }
+                }, (error) => {
+                    console.error("Errore onSnapshot archivio:", error);
+                    showModal('Errore di Connessione', 'Non è stato possibile connettersi al database in tempo reale per l\'archivio.');
+                });
+            } else {
+                userId = null;
+                authContainer.classList.remove('hidden');
+                mainAppContainer.classList.add('hidden');
+                bookingsList.innerHTML = `<p class="text-gray-500 text-center">Accedi per visualizzare le prenotazioni.</p>`;
+            }
+        });
+
+        bookingForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newBooking = {
+                guestName: document.getElementById('guest-name').value,
+                roomName: document.getElementById('room-name').value,
+                numGuests: parseInt(document.getElementById('num-guests').value, 10),
+                dailyRate: parseFloat(document.getElementById('daily-rate').value),
+                discountRate: parseFloat(document.getElementById('discount-rate').value),
+                checkInDate: document.getElementById('checkin-date').value,
+                checkOutDate: document.getElementById('checkout-date').value,
+                arrivalTime: document.getElementById('arrival-time').value,
+                intolerances: document.getElementById('intolerances').value,
+                notes: document.getElementById('notes').value,
+                paymentStatus: document.getElementById('payment-status').value,
+                paymentMethod: (document.getElementById('payment-status').value === 'pagato') ? document.getElementById('payment-method').value : null,
+                partialPaymentAmount: (document.getElementById('payment-status').value === 'pagato_parzialmente') ? parseFloat(document.getElementById('partial-payment').value) : null,
+                invoiceRequested: document.getElementById('invoice-requested').checked,
+                extras: [],
+                createdAt: new Date()
+            };
+
+            if (new Date(newBooking.checkOutDate) <= new Date(newBooking.checkInDate)) {
+                showModal('Errore di Data', 'La data di check-out deve essere successiva alla data di check-in.');
+                return;
+            }
+
+            const checkIn = new Date(newBooking.checkInDate + 'T00:00:00');
+            const checkOut = new Date(newBooking.checkOutDate + 'T00:00:00');
+            
+            const isRoomOccupied = allBookings.some(booking => {
+                const existingCheckIn = new Date(booking.checkInDate + 'T00:00:00');
+                const existingCheckOut = new Date(booking.checkOutDate + 'T00:00:00');
+                const isOverlapping = (checkIn < existingCheckOut && existingCheckIn < checkOut);
+                return isOverlapping && booking.roomName === newBooking.roomName;
+            });
+
+            if (isRoomOccupied) {
+                showModal('Errore', `La stanza ${newBooking.roomName} è già prenotata per questo periodo.`);
+                return;
+            }
+
+            try {
+                const collectionPath = new Date(newBooking.checkOutDate) < new Date().setHours(0,0,0,0) ? `artifacts/${appId}/users/${userId}/archived_bookings` : `artifacts/${appId}/users/${userId}/bookings`;
+                await addDoc(collection(db, collectionPath), newBooking);
+                showModal('Prenotazione Aggiunta', 'La prenotazione è stata aggiunta con successo!');
+                bookingForm.reset();
+            } catch (error) {
+                console.error("Errore durante l'aggiunta della prenotazione:", error);
+                showModal('Errore', 'Non è stato possibile aggiungere la prenotazione. Controlla la console per i dettagli.');
+            }
+        });
+        
+        showManagerBtn.addEventListener('click', () => showView('booking-manager-view'));
+        showCalendarBtn.addEventListener('click', () => { showView('booking-calendar-view'); renderCalendar(); });
+        showSummaryBtn.addEventListener('click', () => { showView('data-summary-view'); updateFilterInputs(summaryFilterSelect.value); calculateAndRenderSummary(); });
+        showArchiveBtn.addEventListener('click', () => { showView('archive-view'); renderBookingsList(allArchivedBookings, true); });
+        
+        Date.prototype.getWeek = function() {
+            const date = new Date(this.getTime());
+            date.setHours(0, 0, 0, 0);
+            date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
+            const week1 = new Date(date.getFullYear(), 0, 4);
+            return 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
+        };
+        
+        window.addEventListener('DOMContentLoaded', () => {
+            updateFilterInputs(summaryFilterSelect.value);
+        });
     </script>
 </body>
 </html>
-versione last
+verlast

@@ -178,6 +178,14 @@
                             </select>
                         </div>
                         <div class="flex flex-col">
+                            <label for="arrival-time" class="text-sm font-medium text-gray-600 mb-1">Orario di arrivo</label>
+                            <input type="time" id="arrival-time" class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                         <div class="flex flex-col">
+                            <label for="notes" class="text-sm font-medium text-gray-600 mb-1">Note</label>
+                            <textarea id="notes" rows="2" class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Aggiungi note su allergie, preferenze, ecc."></textarea>
+                        </div>
+                        <div class="flex flex-col">
                             <label for="intolerances" class="text-sm font-medium text-gray-600 mb-1">Intolleranze (per la colazione)</label>
                             <textarea id="intolerances" rows="2" class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Es. Senza glutine, lattosio"></textarea>
                         </div>
@@ -186,10 +194,6 @@
                             <label for="invoice-requested" class="ml-2 text-sm font-medium text-gray-600">Richiesta Fattura</label>
                         </div>
                         <!-- Campi aggiuntivi nascosti -->
-                        <div class="flex flex-col hidden" id="arrival-time-container">
-                            <label for="arrival-time" class="text-sm font-medium text-gray-600 mb-1">Orario di arrivo</label>
-                            <input type="time" id="arrival-time" class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
-                        </div>
                         <div class="flex flex-col hidden" id="payment-method-container">
                             <label for="payment-method" class="text-sm font-medium text-gray-600 mb-1">Metodo di Pagamento</label>
                             <select id="payment-method" class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
@@ -638,6 +642,7 @@
                 
                 const arrivalTime = booking.arrivalTime ? ` | Arrivo: ${booking.arrivalTime}` : '';
                 const intolerances = booking.intolerances ? `<p class="text-sm text-red-600">Intolleranze: ${booking.intolerances}</p>` : '';
+                const notes = booking.notes ? `<p class="text-sm text-gray-600">Note: ${booking.notes}</p>` : '';
                 
                 const paymentStatusText = {
                     'pagato': `Pagato (${booking.paymentMethod === 'contanti' ? 'Contanti' : booking.paymentMethod === 'carta_di_credito' ? 'Carta di Credito' : 'Bonifico'})`,
@@ -665,6 +670,7 @@
                         </p>
                         <p class="text-sm text-gray-600">Ospiti: ${booking.numGuests}</p>
                         ${intolerances}
+                        ${notes}
                         <p class="text-sm text-gray-600">Tariffa: €${(booking.dailyRate || 0).toFixed(2)} ${discountText ? `(${discountText})` : ''}</p>
                         <p class="text-sm font-bold text-gray-800">Costo Totale: €${finalCost.toFixed(2)} (incluso €${extraCost.toFixed(2)} di extra)</p>
                         <p class="text-sm text-gray-600">Stato Pagamento: ${paymentStatusText[booking.paymentStatus]}</p>
@@ -727,6 +733,8 @@
                         editPaymentStatus.value = booking.paymentStatus;
                         editIntolerances.value = booking.intolerances;
                         editInvoiceRequested.checked = booking.invoiceRequested;
+                        editArrivalTime.value = booking.arrivalTime;
+                        editNotes.value = booking.notes;
                         
                         // Mostra/nasconde i campi di pagamento
                         if (booking.paymentStatus === 'pagato') {
@@ -781,6 +789,8 @@
                 paymentStatus: editPaymentStatus.value,
                 intolerances: editIntolerances.value,
                 invoiceRequested: editInvoiceRequested.checked,
+                arrivalTime: editArrivalTime.value,
+                notes: editNotes.value,
                 // Campi di pagamento
                 paymentMethod: editPaymentStatus.value === 'pagato' ? editPaymentMethod.value : null,
                 partialPaymentAmount: editPaymentStatus.value === 'pagato_parzialmente' ? parseFloat(editPartialPayment.value) : null,
@@ -1374,6 +1384,7 @@
             const checkOutDate = document.getElementById('checkout-date').value;
             const arrivalTime = document.getElementById('arrival-time').value;
             const intolerances = document.getElementById('intolerances').value;
+            const notes = document.getElementById('notes').value;
             const paymentStatus = document.getElementById('payment-status').value;
             const paymentMethod = (paymentStatus === 'pagato') ? document.getElementById('payment-method').value : null;
             const partialPaymentAmount = (paymentStatus === 'pagato_parzialmente') ? parseFloat(document.getElementById('partial-payment').value) : null;
@@ -1414,6 +1425,7 @@
                 checkOutDate,
                 arrivalTime,
                 intolerances,
+                notes,
                 paymentStatus,
                 paymentMethod,
                 partialPaymentAmount,
@@ -1489,4 +1501,4 @@
     </script>
 </body>
 </html>
-versione last
+version final

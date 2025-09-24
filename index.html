@@ -545,7 +545,7 @@
             if (booking.extras && booking.extras.length > 0) {
                 summaryText += `Consumazioni Extra:\n`;
                 booking.extras.forEach(extra => {
-                    summaryText += `- ${extra.description} (${extra.date}): €${extra.cost.toFixed(2)}\n`;
+                    summaryText += `- ${extra.description}: €${extra.cost.toFixed(2)}\n`;
                 });
                 summaryText += `Costo extra totale: €${extraCost.toFixed(2)}\n\n`;
             }
@@ -1394,4 +1394,4 @@
     </script>
 </body>
 </html>
-Prima versione del sito B&B
+Aggiornamento per la correzione del database

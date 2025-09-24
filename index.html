@@ -1457,20 +1457,32 @@
                     const bookingsRef = collection(db, `artifacts/${appId}/users/${userId}/bookings`);
                     const archivedBookingsRef = collection(db, `artifacts/${appId}/users/${userId}/archived_bookings`);
                     
-                    onSnapshot(bookingsRef, (querySnapshot) => {
+                    onSnapshot(bookingsRef, async (querySnapshot) => {
                         const today = new Date();
                         today.setHours(0,0,0,0);
                         allBookings = [];
-                        let pastBookings = 0;
+                        const pastBookingsToArchive = [];
+
                         querySnapshot.forEach((doc) => {
                             const bookingData = { id: doc.id, ...doc.data() };
-                            // Filtra le prenotazioni passate dalla lista principale
                             if (new Date(bookingData.checkOutDate) < today) {
-                                pastBookings++;
+                                pastBookingsToArchive.push(bookingData);
                             } else {
                                 allBookings.push(bookingData);
                             }
                         });
+
+                        if (pastBookingsToArchive.length > 0) {
+                            const batch = writeBatch(db);
+                            pastBookingsToArchive.forEach(booking => {
+                                const activeDocRef = doc(bookingsRef, booking.id);
+                                const archivedDocRef = doc(archivedBookingsRef);
+                                batch.set(archivedDocRef, booking);
+                                batch.delete(activeDocRef);
+                            });
+                            await batch.commit();
+                        }
+
                         allBookings.sort((a, b) => new Date(a.checkInDate) - new Date(b.checkInDate));
                         renderBookingsList(allBookings);
                         renderCalendar();
@@ -1486,7 +1498,6 @@
                             allArchivedBookings.push({ id: doc.id, ...doc.data() });
                         });
                         allArchivedBookings.sort((a, b) => new Date(a.checkInDate) - new Date(b.checkInDate));
-                        // Se la vista dell'archivio è attiva, renderizza la lista
                         if (!archiveView.classList.contains('hidden')) {
                             renderBookingsList(allArchivedBookings, true);
                         }
@@ -1616,4 +1627,4 @@
     </script>
 </body>
 </html>
-versione finale
+versione last

@@ -613,7 +613,7 @@
             if (booking.extras && booking.extras.length > 0) {
                 summaryText += `Consumazioni Extra:\n`;
                 booking.extras.forEach(extra => {
-                    summaryText += `- ${extra.description}: €${extra.cost.toFixed(2)}\n`;
+                    summaryText += `- ${extra.description}: €${extra.cost.toFixed(2)} (${extra.date})</li>`).join('');
                 });
                 summaryText += `Costo extra totale: €${extraCost.toFixed(2)}\n\n`;
             }
@@ -1122,4 +1122,393 @@
             if (inputElement) {
                 inputElement.addEventListener('change', () => calculateAndRenderSummary());
             }
-tcz
+        };
+
+        const calculateAndRenderSummary = () => {
+            const filterType = summaryFilterSelect.value;
+            let filterDate = new Date();
+            let filterYear = filterDate.getFullYear();
+            let filterMonth = filterDate.getMonth();
+            let filterWeek = filterDate.getWeek();
+
+            const inputElement = filterInputsContainer.querySelector('input');
+            if (inputElement) {
+                const inputValue = inputElement.value;
+                if (filterType === 'year') {
+                    filterYear = parseInt(inputValue, 10);
+                } else if (filterType === 'month') {
+                    const [year, month] = inputValue.split('-').map(Number);
+                    filterYear = year;
+                    filterMonth = month - 1;
+                } else if (filterType === 'week') {
+                    const [year, week] = inputValue.split('-W').map(Number);
+                    filterYear = year;
+                    filterWeek = week;
+                } else if (filterType === 'day') {
+                    filterDate = new Date(inputValue + 'T00:00:00');
+                }
+            }
+
+            const allRelevantBookings = [...allBookings];
+
+            if (!allRelevantBookings || allRelevantBookings.length === 0) {
+                summaryDataContainer.innerHTML = `<p class="text-center text-gray-500 col-span-full">Nessun dato disponibile per il riepilogo.</p>`;
+                summaryExtrasContainer.innerHTML = `<p class="text-center text-gray-500 col-span-full">Nessun dato extra disponibile.</p>`;
+                return;
+            }
+            
+            const filteredBookings = allRelevantBookings.filter(booking => {
+                const checkIn = new Date(booking.checkInDate + 'T00:00:00');
+                const checkOut = new Date(booking.checkOutDate + 'T00:00:00');
+                
+                let relevant = false;
+                for (let d = new Date(checkIn); d < checkOut; d.setDate(d.getDate() + 1)) {
+                    if (filterType === 'year' && d.getFullYear() === filterYear) {
+                        relevant = true;
+                        break;
+                    }
+                    if (filterType === 'month' && d.getFullYear() === filterYear && d.getMonth() === filterMonth) {
+                        relevant = true;
+                        break;
+                    }
+                    if (filterType === 'week' && d.getFullYear() === filterYear && d.getWeek() === filterWeek) {
+                        relevant = true;
+                        break;
+                    }
+                    if (filterType === 'day' && d.getFullYear() === filterDate.getFullYear() && d.getMonth() === filterDate.getMonth() && d.getDate() === filterDate.getDate()) {
+                        relevant = true;
+                        break;
+                    }
+                }
+                return relevant;
+            });
+
+            // Calcoli e raggruppamento dei dati
+            let totalGuests = 0;
+            let totalRoomsSold = 0;
+            let totalRevenue = 0;
+            let totalInvoices = 0;
+            let totalCash = 0;
+            let totalCreditCard = 0;
+            let totalBankTransfer = 0;
+            let totalExtraRevenue = 0;
+            const roomsSoldByRoom = {};
+            const revenueByRoom = {};
+            const extrasByItem = {};
+
+            filteredBookings.forEach(booking => {
+                const checkIn = new Date(booking.checkInDate + 'T00:00:00');
+                const checkOut = new Date(booking.checkOutDate + 'T00:00:00');
+                const diffTime = Math.abs(checkOut - checkIn);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                totalGuests += booking.numGuests;
+                totalRoomsSold += diffDays;
+
+                const discountedRate = (booking.dailyRate || 0) * (1 - (booking.discountRate || 0) / 100);
+                const totalStayCost = discountedRate * diffDays;
+                
+                const extraCost = (booking.extras || []).reduce((sum, extra) => {
+                    const extraDate = new Date(extra.date + 'T00:00:00');
+                    let isExtraRelevant = false;
+                    if (filterType === 'year' && extraDate.getFullYear() === filterYear) {
+                        isExtraRelevant = true;
+                    } else if (filterType === 'month' && extraDate.getFullYear() === filterYear && extraDate.getMonth() === filterMonth) {
+                        isExtraRelevant = true;
+                    } else if (filterType === 'week' && extraDate.getFullYear() === filterYear && extraDate.getWeek() === filterWeek) {
+                        isExtraRelevant = true;
+                    } else if (filterType === 'day' && extraDate.getFullYear() === filterDate.getFullYear() && extraDate.getMonth() === filterDate.getMonth() && extraDate.getDate() === filterDate.getDate()) {
+                        isExtraRelevant = true;
+                    }
+
+                    if (isExtraRelevant) {
+                        if (!extrasByItem[extra.description]) extrasByItem[extra.description] = 0;
+                        extrasByItem[extra.description] += extra.cost;
+                        return sum + extra.cost;
+                    }
+                    return sum;
+                }, 0);
+                totalExtraRevenue += extraCost;
+                
+                const totalCost = totalStayCost + extraCost;
+                totalRevenue += totalCost;
+
+                if (booking.invoiceRequested) {
+                    totalInvoices++;
+                }
+
+                if (booking.paymentStatus === 'pagato') {
+                    if (booking.paymentMethod === 'contanti') {
+                        totalCash += totalCost;
+                    } else if (booking.paymentMethod === 'carta_di_credito') {
+                        totalCreditCard += totalCost;
+                    } else if (booking.paymentMethod === 'bonifico') {
+                        totalBankTransfer += totalCost;
+                    }
+                } else if (booking.paymentStatus === 'pagato_parzialmente') {
+                    if (booking.paymentMethod === 'contanti') {
+                        totalCash += (booking.partialPaymentAmount || 0);
+                    } else if (booking.paymentMethod === 'carta_di_credito') {
+                        totalCreditCard += (booking.partialPaymentAmount || 0);
+                    } else if (booking.paymentMethod === 'bonifico') {
+                        totalBankTransfer += (booking.partialPaymentAmount || 0);
+                    }
+                }
+
+                // Conteggio per singola camera
+                if (!roomsSoldByRoom[booking.roomName]) {
+                    roomsSoldByRoom[booking.roomName] = 0;
+                }
+                roomsSoldByRoom[booking.roomName] += diffDays;
+                if (!revenueByRoom[booking.roomName]) {
+                    revenueByRoom[booking.roomName] = 0;
+                }
+                revenueByRoom[booking.roomName] += totalCost;
+            });
+            
+            let html = ``;
+            const formatData = (label, value, isCurrency = false) => `
+                <div class="bg-gray-100 p-4 rounded-lg shadow-sm">
+                    <h4 class="text-lg font-semibold text-gray-700">${label}</h4>
+                    <p class="text-2xl font-bold text-blue-600">${isCurrency ? '€' : ''}${value.toFixed(isCurrency ? 2 : 0)}</p>
+                </div>
+            `;
+            
+            html += formatData('Ospiti totali', totalGuests);
+            html += formatData('Camere vendute', totalRoomsSold);
+            html += formatData('Incasso generale', totalRevenue, true);
+            html += formatData('Incasso contanti', totalCash, true);
+            html += formatData('Incasso carta', totalCreditCard, true);
+            html += formatData('Incasso bonifico', totalBankTransfer, true);
+            html += formatData('Fatture richieste', totalInvoices);
+            
+            html += `<h3 class="text-xl font-semibold text-gray-700 col-span-full mt-4">Camere Vendute per Stanza</h3>`;
+            for (const room in roomsSoldByRoom) {
+                html += formatData(`${room}`, roomsSoldByRoom[room]);
+            }
+            
+            html += `<h3 class="text-xl font-semibold text-gray-700 col-span-full mt-4">Incasso per Stanza</h3>`;
+            for (const room in revenueByRoom) {
+                html += formatData(`${room}`, revenueByRoom[room], true);
+            }
+
+            summaryDataContainer.innerHTML = html;
+
+            let extrasHtml = `<p class="text-2xl font-bold text-blue-600 mb-4">Incasso Extra Totale: €${totalExtraRevenue.toFixed(2)}</p>`;
+            
+            if (Object.keys(extrasByItem).length > 0) {
+                extrasHtml += `<h4 class="text-lg font-semibold text-gray-700 mb-2">Dettaglio per Consumazione</h4>`;
+                for (const item in extrasByItem) {
+                    extrasHtml += `<div class="bg-gray-100 p-3 rounded-lg shadow-sm mb-2">
+                        <p class="font-semibold">${item}: <span class="text-green-600">€${extrasByItem[item].toFixed(2)}</span></p>
+                    </div>`;
+                }
+            } else {
+                extrasHtml += `<p class="text-gray-500">Nessuna consumazione extra nel periodo selezionato.</p>`;
+            }
+            summaryExtrasContainer.innerHTML = extrasHtml;
+        };
+        
+        // Aggiunge un listener all'input dei filtri per aggiornare il riepilogo
+        summaryFilterSelect.addEventListener('change', (e) => {
+            updateFilterInputs(e.target.value);
+            calculateAndRenderSummary();
+        });
+
+        // Gestione dell'autenticazione
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                showModal('Accesso Riuscito', 'Accesso effettuato con successo!');
+            } catch (error) {
+                console.error("Errore di accesso:", error);
+                showModal('Errore di Accesso', 'Credenziali non valide. Per favore, riprova.');
+            }
+        });
+
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+            try {
+                await createUserWithEmailAndPassword(auth, email, password);
+                showModal('Registrazione Riuscita', 'Account creato con successo! Puoi accedere.');
+                loginView.classList.remove('hidden');
+                registerView.classList.add('hidden');
+            } catch (error) {
+                console.error("Errore di registrazione:", error);
+                showModal('Errore di Registrazione', 'Non è stato possibile creare l\'account. Controlla la console per i dettagli.');
+            }
+        });
+
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                await signOut(auth);
+                showModal('Disconnessione', 'Disconnessione effettuata con successo.');
+            } catch (error) {
+                console.error("Errore di logout:", error);
+                showModal('Errore', 'Non è stato possibile disconnettersi.');
+            }
+        });
+
+        showRegisterBtn.addEventListener('click', () => {
+            loginView.classList.add('hidden');
+            registerView.classList.remove('hidden');
+        });
+
+        showLoginBtn.addEventListener('click', () => {
+            loginView.classList.remove('hidden');
+            registerView.classList.add('hidden');
+        });
+
+        const showView = (viewId) => {
+            const views = [managerView, calendarView, summaryView];
+            views.forEach(view => {
+                view.classList.add('hidden');
+            });
+            document.getElementById(viewId).classList.remove('hidden');
+
+            const navButtons = [showManagerBtn, showCalendarBtn, showSummaryBtn];
+            navButtons.forEach(btn => {
+                btn.classList.replace('bg-blue-600', 'bg-gray-300');
+                btn.classList.replace('text-white', 'text-gray-800');
+            });
+            document.querySelector(`#${viewId.replace('-view', '-btn')}`).classList.replace('bg-gray-300', 'bg-blue-600');
+            document.querySelector(`#${viewId.replace('-view', '-btn')}`).classList.replace('text-gray-800', 'text-white');
+        };
+
+        showManagerBtn.addEventListener('click', () => {
+            showView('booking-manager-view');
+        });
+
+        showCalendarBtn.addEventListener('click', () => {
+            showView('booking-calendar-view');
+            renderCalendar();
+        });
+
+        showSummaryBtn.addEventListener('click', () => {
+            showView('data-summary-view');
+            updateFilterInputs(summaryFilterSelect.value);
+            calculateAndRenderSummary();
+        });
+        
+        Date.prototype.getWeek = function() {
+            const date = new Date(this.getTime());
+            date.setHours(0, 0, 0, 0);
+            date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
+            const week1 = new Date(date.getFullYear(), 0, 4);
+            return 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
+        };
+        
+        window.addEventListener('DOMContentLoaded', () => {
+            updateFilterInputs(summaryFilterSelect.value);
+        });
+        
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                userId = user.uid;
+                userIdSpan.textContent = userId;
+                authContainer.classList.add('hidden');
+                mainAppContainer.classList.remove('hidden');
+
+                const bookingsRef = collection(db, `artifacts/${appId}/users/${userId}/bookings`);
+
+                onSnapshot(bookingsRef, async (querySnapshot) => {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    allBookings = [];
+                    querySnapshot.forEach((doc) => {
+                        allBookings.push({ id: doc.id, ...doc.data() });
+                    });
+                    
+                    allBookings.sort((a, b) => new Date(a.checkInDate) - new Date(b.checkInDate));
+                    renderBookingsList(allBookings);
+                    renderCalendar();
+                    calculateAndRenderSummary();
+                }, (error) => {
+                    console.error("Errore onSnapshot prenotazioni:", error);
+                    showModal('Errore di Connessione', 'Non è stato possibile connettersi al database in tempo reale per le prenotazioni.');
+                });
+
+            } else {
+                userId = null;
+                authContainer.classList.remove('hidden');
+                mainAppContainer.classList.add('hidden');
+                bookingsList.innerHTML = `<p class="text-gray-500 text-center">Accedi per visualizzare le prenotazioni.</p>`;
+            }
+        });
+
+        bookingForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newBooking = {
+                guestName: document.getElementById('guest-name').value,
+                roomName: document.getElementById('room-name').value,
+                numGuests: parseInt(document.getElementById('num-guests').value, 10),
+                dailyRate: parseFloat(document.getElementById('daily-rate').value),
+                discountRate: parseFloat(document.getElementById('discount-rate').value),
+                checkInDate: document.getElementById('checkin-date').value,
+                checkOutDate: document.getElementById('checkout-date').value,
+                arrivalTime: document.getElementById('arrival-time').value,
+                intolerances: document.getElementById('intolerances').value,
+                notes: document.getElementById('notes').value,
+                paymentStatus: document.getElementById('payment-status').value,
+                paymentMethod: (document.getElementById('payment-status').value === 'pagato') ? document.getElementById('payment-method').value : null,
+                partialPaymentAmount: (document.getElementById('payment-status').value === 'pagato_parzialmente') ? parseFloat(document.getElementById('partial-payment').value) : null,
+                invoiceRequested: document.getElementById('invoice-requested').checked,
+                extras: [],
+                createdAt: new Date()
+            };
+
+            if (new Date(newBooking.checkOutDate) <= new Date(newBooking.checkInDate)) {
+                showModal('Errore di Data', 'La data di check-out deve essere successiva alla data di check-in.');
+                return;
+            }
+
+            const checkIn = new Date(newBooking.checkInDate + 'T00:00:00');
+            const checkOut = new Date(newBooking.checkOutDate + 'T00:00:00');
+            
+            const isRoomOccupied = allBookings.some(booking => {
+                const existingCheckIn = new Date(booking.checkInDate + 'T00:00:00');
+                const existingCheckOut = new Date(booking.checkOutDate + 'T00:00:00');
+                const isOverlapping = (checkIn < existingCheckOut && existingCheckIn < checkOut);
+                return isOverlapping && booking.roomName === newBooking.roomName;
+            });
+
+            if (isRoomOccupied) {
+                showModal('Errore', `La stanza ${newBooking.roomName} è già prenotata per questo periodo.`);
+                return;
+            }
+
+            try {
+                const collectionPath = `artifacts/${appId}/users/${userId}/bookings`;
+                await addDoc(collection(db, collectionPath), newBooking);
+                showModal('Prenotazione Aggiunta', 'La prenotazione è stata aggiunta con successo!');
+                bookingForm.reset();
+            } catch (error) {
+                console.error("Errore durante l'aggiunta della prenotazione:", error);
+                showModal('Errore', 'Non è stato possibile aggiungere la prenotazione. Controlla la console per i dettagli.');
+            }
+        });
+        
+        showManagerBtn.addEventListener('click', () => showView('booking-manager-view'));
+        showCalendarBtn.addEventListener('click', () => { showView('booking-calendar-view'); renderCalendar(); });
+        showSummaryBtn.addEventListener('click', () => { showView('data-summary-view'); updateFilterInputs(summaryFilterSelect.value); calculateAndRenderSummary(); });
+        
+        Date.prototype.getWeek = function() {
+            const date = new Date(this.getTime());
+            date.setHours(0, 0, 0, 0);
+            date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
+            const week1 = new Date(date.getFullYear(), 0, 4);
+            return 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
+        };
+        
+        window.addEventListener('DOMContentLoaded', () => {
+            updateFilterInputs(summaryFilterSelect.value);
+        });
+    </script>
+</body>
+</html>
+abc

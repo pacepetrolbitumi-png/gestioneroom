@@ -402,6 +402,14 @@
                     <label for="edit-intolerances" class="text-sm font-medium text-gray-600 mb-1">Intolleranze (per la colazione)</label>
                     <textarea id="edit-intolerances" rows="2" class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Es. Senza glutine, lattosio"></textarea>
                 </div>
+                 <div class="flex flex-col mb-4">
+                    <label for="edit-arrival-time" class="text-sm font-medium text-gray-600 mb-1">Orario di arrivo</label>
+                    <input type="time" id="edit-arrival-time" class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                 <div class="flex flex-col mb-4">
+                    <label for="edit-notes" class="text-sm font-medium text-gray-600 mb-1">Note</label>
+                    <textarea id="edit-notes" rows="2" class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Aggiungi note su allergie, preferenze, ecc."></textarea>
+                </div>
                 <div class="flex items-center mb-4">
                     <input type="checkbox" id="edit-invoice-requested" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
                     <label for="edit-invoice-requested" class="ml-2 text-sm font-medium text-gray-600">Richiesta Fattura</label>
@@ -514,6 +522,8 @@
         const editPaymentStatus = document.getElementById('edit-payment-status');
         const editIntolerances = document.getElementById('edit-intolerances');
         const editInvoiceRequested = document.getElementById('edit-invoice-requested');
+        const editArrivalTime = document.getElementById('edit-arrival-time');
+        const editNotes = document.getElementById('edit-notes');
         const cancelEditBtn = document.getElementById('cancel-edit-btn');
         const editPaymentMethodContainer = document.getElementById('edit-payment-method-container');
         const editPartialPaymentContainer = document.getElementById('edit-partial-payment-container');
@@ -1501,4 +1511,4 @@
     </script>
 </body>
 </html>
-version final
+versione top

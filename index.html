@@ -776,6 +776,7 @@
             geminiModal.classList.remove('hidden');
             geminiTitle.textContent = title;
             geminiContent.textContent = '';
+            geminiLoading.classList.add('flex');
             geminiLoading.classList.remove('hidden');
 
             const apiKey = ""; 
@@ -809,6 +810,7 @@
                 geminiContent.textContent = `Si è verificato un errore durante la generazione. Per favore, riprova. Errore: ${error.message}`;
             } finally {
                 geminiLoading.classList.add('hidden');
+                geminiLoading.classList.remove('flex');
             }
         };
         
@@ -1394,4 +1396,4 @@
     </script>
 </body>
 </html>
-NUOVA VERSIONE
+new version

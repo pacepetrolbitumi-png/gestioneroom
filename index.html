@@ -35,16 +35,16 @@
             transform: scale(1.05);
             background-color: #e5e7eb;
         }
+        .selected-day {
+            background-color: #bfdbfe;
+            border: 2px solid #3b82f6;
+        }
         .day-number {
             position: absolute;
             top: 8px;
             right: 8px;
             font-size: 0.875rem;
             color: #4b5563;
-        }
-        .selected-day {
-            background-color: #bfdbfe;
-            border: 2px solid #3b82f6;
         }
         .booking-details {
             position: absolute;
@@ -613,7 +613,7 @@
             if (booking.extras && booking.extras.length > 0) {
                 summaryText += `Consumazioni Extra:\n`;
                 booking.extras.forEach(extra => {
-                    summaryText += `- ${extra.description}: €${extra.cost.toFixed(2)} (${extra.date})</li>`).join('');
+                    summaryText += `- ${extra.description}: €${extra.cost.toFixed(2)}\n`;
                 });
                 summaryText += `Costo extra totale: €${extraCost.toFixed(2)}\n\n`;
             }
@@ -746,7 +746,7 @@
                         editNumGuests.value = booking.numGuests;
                         editDailyRate.value = booking.dailyRate;
                         editCheckinDate.value = booking.checkInDate;
-                        editCheckoutDate.value = booking.checkOutDate;
+                        editCheckoutDate.value = booking.checkoutDate;
                         editDiscountRate.value = booking.discountRate;
                         editPaymentStatus.value = booking.paymentStatus;
                         editIntolerances.value = booking.intolerances;
@@ -912,12 +912,14 @@
 
         geminiCopyBtn.addEventListener('click', () => {
             const textToCopy = geminiContent.textContent;
-            navigator.clipboard.writeText(textToCopy).then(() => {
-                showModal('Copiato!', 'Il testo è stato copiato negli appunti.');
-            }).catch(err => {
-                console.error('Errore durante la copia del testo: ', err);
-                showModal('Errore', 'Non è stato possibile copiare il testo.');
-            });
+            // Usa document.execCommand('copy') per una maggiore compatibilità in un iFrame
+            const tempTextArea = document.createElement('textarea');
+            tempTextArea.value = textToCopy;
+            document.body.appendChild(tempTextArea);
+            tempTextArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempTextArea);
+            showModal('Copiato!', 'Il testo è stato copiato negli appunti.');
         });
 
         geminiCloseBtn.addEventListener('click', () => {
@@ -1061,7 +1063,7 @@
             
             const bookingsForDay = allBookings.filter(booking => {
                 const checkIn = new Date(booking.checkInDate + 'T00:00:00');
-                const checkOut = new Date(booking.checkOutDate + 'T00:00:00');
+                const checkOut = new Date(booking.checkoutDate + 'T00:00:00');
                 return selectedDate >= checkIn && selectedDate < checkOut;
             });
             
@@ -1076,7 +1078,7 @@
                 bookingEl.innerHTML = `
                     <h4 class="text-md font-bold text-gray-800">${booking.guestName}</h4>
                     <p class="text-sm text-gray-600">Stanza: ${booking.roomName}</p>
-                    <p class="text-sm text-gray-600">Check-in: ${booking.checkInDate} | Check-out: ${booking.checkOutDate}</p>
+                    <p class="text-sm text-gray-600">Check-in: ${booking.checkInDate} | Check-out: ${booking.checkoutDate}</p>
                 `;
                 selectedDayBookingsEl.appendChild(bookingEl);
             });
@@ -1159,7 +1161,7 @@
             
             const filteredBookings = allRelevantBookings.filter(booking => {
                 const checkIn = new Date(booking.checkInDate + 'T00:00:00');
-                const checkOut = new Date(booking.checkOutDate + 'T00:00:00');
+                const checkOut = new Date(booking.checkoutDate + 'T00:00:00');
                 
                 let relevant = false;
                 for (let d = new Date(checkIn); d < checkOut; d.setDate(d.getDate() + 1)) {
@@ -1198,7 +1200,7 @@
 
             filteredBookings.forEach(booking => {
                 const checkIn = new Date(booking.checkInDate + 'T00:00:00');
-                const checkOut = new Date(booking.checkOutDate + 'T00:00:00');
+                const checkOut = new Date(booking.checkoutDate + 'T00:00:00');
                 const diffTime = Math.abs(checkOut - checkIn);
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
@@ -1433,19 +1435,6 @@
                     showModal('Errore di Connessione', 'Non è stato possibile connettersi al database in tempo reale per le prenotazioni.');
                 });
 
-                // Gestione dell'autenticazione iniziale
-                if (initialAuthToken) {
-                    try {
-                        await signInWithCustomToken(auth, initialAuthToken);
-                    } catch (error) {
-                        console.error("Errore signInWithCustomToken:", error);
-                        // In caso di errore, si continua con l'autenticazione anonima
-                        await signInAnonymously(auth);
-                    }
-                } else {
-                    await signInAnonymously(auth);
-                }
-
             } else {
                 userId = null;
                 authContainer.classList.remove('hidden');
@@ -1481,11 +1470,11 @@
             }
 
             const checkIn = new Date(newBooking.checkInDate + 'T00:00:00');
-            const checkOut = new Date(newBooking.checkOutDate + 'T00:00:00');
+            const checkOut = new Date(newBooking.checkoutDate + 'T00:00:00');
             
             const isRoomOccupied = allBookings.some(booking => {
                 const existingCheckIn = new Date(booking.checkInDate + 'T00:00:00');
-                const existingCheckOut = new Date(booking.checkOutDate + 'T00:00:00');
+                const existingCheckOut = new Date(booking.checkoutDate + 'T00:00:00');
                 const isOverlapping = (checkIn < existingCheckOut && existingCheckIn < checkOut);
                 return isOverlapping && booking.roomName === newBooking.roomName;
             });
@@ -1524,4 +1513,4 @@
     </script>
 </body>
 </html>
-boo
+www

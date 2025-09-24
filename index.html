@@ -76,6 +76,9 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        .archived-booking {
+            opacity: 0.6;
+        }
     </style>
 </head>
 <body class="bg-gray-100 p-4 min-h-screen flex items-center justify-center">
@@ -125,6 +128,7 @@
                 <button id="show-manager-btn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">Gestione Prenotazioni</button>
                 <button id="show-calendar-btn" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors">Calendario</button>
                 <button id="show-summary-btn" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors">Riepilogo</button>
+                <button id="show-archive-btn" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors">Archivio</button>
             </div>
 
             <!-- Vista: Gestore Prenotazioni -->
@@ -214,7 +218,8 @@
 
                 <!-- Lista delle prenotazioni -->
                 <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <h2 class="text-2xl font-semibold text-gray-700 mb-4">Prenotazioni</h2>
+                    <h2 class="text-2xl font-semibold text-gray-700 mb-4">Prenotazioni in corso</h2>
+                    <button id="archive-past-btn" class="bg-red-500 text-white text-sm font-bold py-1 px-3 rounded-lg hover:bg-red-600 transition-colors mb-4">Archivia Prenotazioni Passate</button>
                     <div id="bookings-list" class="space-y-4">
                         <p class="text-gray-500 text-center">Caricamento delle prenotazioni...</p>
                     </div>
@@ -280,6 +285,14 @@
                     <div id="extra-summary-details">
                         <!-- Il riepilogo degli extra verrà visualizzato qui -->
                     </div>
+                </div>
+            </div>
+
+            <!-- Vista: Archivio Prenotazioni -->
+            <div id="archive-view" class="hidden">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-4">Archivio Prenotazioni</h2>
+                <div id="archived-bookings-list" class="space-y-4">
+                    <p class="text-gray-500 text-center">Caricamento dell'archivio...</p>
                 </div>
             </div>
         </div>
@@ -439,7 +452,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, collection, query, onSnapshot, addDoc, updateDoc, deleteDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, collection, query, onSnapshot, addDoc, updateDoc, deleteDoc, setLogLevel, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
         // Attiva i log per il debug di Firestore
         setLogLevel('debug');
@@ -479,12 +492,15 @@
         const showManagerBtn = document.getElementById('show-manager-btn');
         const showCalendarBtn = document.getElementById('show-calendar-btn');
         const showSummaryBtn = document.getElementById('show-summary-btn');
+        const showArchiveBtn = document.getElementById('show-archive-btn'); // Nuovo pulsante
         const managerView = document.getElementById('booking-manager-view');
         const calendarView = document.getElementById('booking-calendar-view');
         const summaryView = document.getElementById('data-summary-view');
+        const archiveView = document.getElementById('archive-view'); // Nuova vista
 
         const bookingForm = document.getElementById('booking-form');
         const bookingsList = document.getElementById('bookings-list');
+        const archivedBookingsList = document.getElementById('archived-bookings-list'); // Nuova lista
         const userIdSpan = document.getElementById('user-id');
         const modal = document.getElementById('modal');
         const modalTitle = document.getElementById('modal-title');
@@ -508,7 +524,8 @@
         const geminiLoading = document.getElementById('gemini-loading');
         const geminiCopyBtn = document.getElementById('gemini-copy-btn');
         const geminiCloseBtn = document.getElementById('gemini-close-btn');
-
+        const archivePastBtn = document.getElementById('archive-past-btn'); // Nuovo pulsante
+        
         const editModal = document.getElementById('edit-modal');
         const editForm = document.getElementById('edit-form');
         const editBookingId = document.getElementById('edit-booking-id');
@@ -542,6 +559,7 @@
         const summaryExtrasContainer = document.getElementById('extra-summary-details');
 
         let allBookings = [];
+        let allArchivedBookings = [];
         let currentMonth = new Date();
         const monthNames = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];
 
@@ -631,13 +649,13 @@
         });
 
         // Funzioni per la vista Gestione Prenotazioni
-        const renderBookingsList = (bookings) => {
+        const renderBookingsList = (bookings, isArchived = false) => {
+            const listEl = isArchived ? archivedBookingsList : bookingsList;
             if (bookings.length === 0) {
-                bookingsList.innerHTML = `<p class="text-center text-gray-500">Nessuna prenotazione trovata.</p>`;
+                listEl.innerHTML = `<p class="text-center text-gray-500">Nessuna prenotazione trovata.</p>`;
                 return;
             }
-
-            bookingsList.innerHTML = '';
+            listEl.innerHTML = '';
             bookings.forEach(booking => {
                 const checkIn = new Date(booking.checkInDate);
                 const checkOut = new Date(booking.checkOutDate);
@@ -645,8 +663,6 @@
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
                 const originalCost = (booking.dailyRate || 0) * diffDays;
                 const discountedCost = originalCost * (1 - (booking.discountRate || 0) / 100);
-                
-                // Calcola il costo totale includendo gli extra
                 const extraCost = (booking.extras || []).reduce((sum, extra) => sum + (extra.cost || 0), 0);
                 const finalCost = discountedCost + extraCost;
                 
@@ -669,7 +685,7 @@
                 }
 
                 const bookingEl = document.createElement('div');
-                bookingEl.className = 'flex flex-col md:flex-row items-start md:items-center justify-between p-4 border border-gray-200 rounded-lg shadow-sm';
+                bookingEl.className = `flex flex-col md:flex-row items-start md:items-center justify-between p-4 border border-gray-200 rounded-lg shadow-sm ${isArchived ? 'archived-booking' : ''}`;
                 bookingEl.innerHTML = `
                     <div class="flex-grow mb-2 md:mb-0">
                         <h3 class="text-lg font-bold text-gray-800">${booking.guestName}</h3>
@@ -695,7 +711,7 @@
                         <button class="delete-btn bg-red-600 text-white font-bold py-1 px-3 rounded-lg hover:bg-red-700 transition-colors" data-id="${booking.id}">Elimina</button>
                     </div>
                 `;
-                bookingsList.appendChild(bookingEl);
+                listEl.appendChild(bookingEl);
             });
             // Aggiungi listener per i pulsanti
             document.querySelectorAll('.add-extra-btn').forEach(btn => {
@@ -709,7 +725,7 @@
             document.querySelectorAll('.summary-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     const bookingId = e.target.dataset.id;
-                    const booking = allBookings.find(b => b.id === bookingId);
+                    const booking = allBookings.find(b => b.id === bookingId) || allArchivedBookings.find(b => b.id === bookingId);
                     if (booking) {
                         showSummaryModal(booking);
                     }
@@ -719,7 +735,7 @@
             document.querySelectorAll('.gemini-email-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     const bookingId = e.target.dataset.id;
-                    const booking = allBookings.find(b => b.id === bookingId);
+                    const booking = allBookings.find(b => b.id === bookingId) || allArchivedBookings.find(b => b.id === bookingId);
                     if (booking) {
                         generateEmail(booking);
                     }
@@ -772,8 +788,8 @@
                     const confirmDelete = await showModal('Elimina Prenotazione', 'Sei sicuro di voler eliminare questa prenotazione?', true);
                     if (confirmDelete) {
                         try {
-                            // Aggiorna la logica per la collezione privata
-                            await deleteDoc(doc(db, `artifacts/${appId}/users/${userId}/bookings`, id));
+                            const collectionPath = isArchived ? `artifacts/${appId}/users/${userId}/archived_bookings` : `artifacts/${appId}/users/${userId}/bookings`;
+                            await deleteDoc(doc(db, collectionPath, id));
                             showModal('Successo', 'Prenotazione eliminata con successo.');
                         } catch (error) {
                             console.error("Errore durante l'eliminazione della prenotazione:", error);
@@ -783,6 +799,52 @@
                 });
             });
         };
+
+        // Funzione per archiviare le prenotazioni passate
+        const archivePastBookings = async () => {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const pastBookings = allBookings.filter(booking => {
+                const checkOut = new Date(booking.checkOutDate + 'T00:00:00');
+                return checkOut < today;
+            });
+            
+            if (pastBookings.length === 0) {
+                showModal('Nessuna Prenotazione da Archiviare', 'Non ci sono prenotazioni passate da archiviare.');
+                return;
+            }
+
+            const confirmArchive = await showModal(
+                'Archivia Prenotazioni',
+                `Sei sicuro di voler archiviare ${pastBookings.length} prenotazioni passate?`,
+                true
+            );
+
+            if (confirmArchive) {
+                const batch = writeBatch(db);
+                const activeBookingsRef = collection(db, `artifacts/${appId}/users/${userId}/bookings`);
+                const archivedBookingsRef = collection(db, `artifacts/${appId}/users/${userId}/archived_bookings`);
+
+                try {
+                    pastBookings.forEach(booking => {
+                        const activeDocRef = doc(activeBookingsRef, booking.id);
+                        const archivedDocRef = doc(archivedBookingsRef);
+                        
+                        batch.set(archivedDocRef, booking);
+                        batch.delete(activeDocRef);
+                    });
+
+                    await batch.commit();
+                    showModal('Archiviazione Completata', `${pastBookings.length} prenotazioni sono state archiviate con successo.`);
+                } catch (error) {
+                    console.error("Errore durante l'archiviazione:", error);
+                    showModal('Errore', 'Si è verificato un errore durante l\'archiviazione. Controlla la console per i dettagli.');
+                }
+            }
+        };
+
+        archivePastBtn.addEventListener('click', archivePastBookings);
 
         // Gestione dell'invio del modulo di modifica
         editForm.addEventListener('submit', async (e) => {
@@ -920,12 +982,13 @@
                 return;
             }
 
-            const bookingToUpdate = allBookings.find(b => b.id === bookingId);
+            const bookingToUpdate = allBookings.find(b => b.id === bookingId) || allArchivedBookings.find(b => b.id === bookingId);
             const updatedExtras = [...(bookingToUpdate.extras || []), { description, cost, date }];
 
             try {
                 // Aggiorna la logica per la collezione privata
-                await updateDoc(doc(db, `artifacts/${appId}/users/${userId}/bookings`, bookingId), { extras: updatedExtras });
+                const collectionPath = document.querySelector('#booking-manager-view').classList.contains('hidden') ? `artifacts/${appId}/users/${userId}/archived_bookings` : `artifacts/${appId}/users/${userId}/bookings`;
+                await updateDoc(doc(db, collectionPath, bookingId), { extras: updatedExtras });
                 extraModal.classList.add('hidden');
                 extraForm.reset();
                 showModal('Extra Aggiunto', 'La consumazione è stata aggiunta con successo!');
@@ -1131,13 +1194,15 @@
                 }
             }
 
-            if (!allBookings || allBookings.length === 0) {
+            const allRelevantBookings = [...allBookings, ...allArchivedBookings];
+
+            if (!allRelevantBookings || allRelevantBookings.length === 0) {
                 summaryDataContainer.innerHTML = `<p class="text-center text-gray-500 col-span-full">Nessun dato disponibile per il riepilogo.</p>`;
                 summaryExtrasContainer.innerHTML = `<p class="text-center text-gray-500 col-span-full">Nessun dato extra disponibile.</p>`;
                 return;
             }
             
-            const filteredBookings = allBookings.filter(booking => {
+            const filteredBookings = allRelevantBookings.filter(booking => {
                 const checkIn = new Date(booking.checkInDate + 'T00:00:00');
                 const checkOut = new Date(booking.checkOutDate + 'T00:00:00');
                 
@@ -1344,6 +1409,43 @@
             registerView.classList.add('hidden');
         });
 
+        const showView = (viewId) => {
+            const views = [managerView, calendarView, summaryView, archiveView];
+            views.forEach(view => {
+                view.classList.add('hidden');
+            });
+            document.getElementById(viewId).classList.remove('hidden');
+
+            const navButtons = [showManagerBtn, showCalendarBtn, showSummaryBtn, showArchiveBtn];
+            navButtons.forEach(btn => {
+                btn.classList.replace('bg-blue-600', 'bg-gray-300');
+                btn.classList.replace('text-white', 'text-gray-800');
+            });
+            document.querySelector(`#${viewId.replace('-view', '-btn')}`).classList.replace('bg-gray-300', 'bg-blue-600');
+            document.querySelector(`#${viewId.replace('-view', '-btn')}`).classList.replace('text-gray-800', 'text-white');
+        };
+
+        showManagerBtn.addEventListener('click', () => {
+            showView('booking-manager-view');
+            renderBookingsList(allBookings.filter(b => new Date(b.checkOutDate) >= new Date().setHours(0,0,0,0)));
+        });
+
+        showCalendarBtn.addEventListener('click', () => {
+            showView('booking-calendar-view');
+            renderCalendar();
+        });
+
+        showSummaryBtn.addEventListener('click', () => {
+            showView('data-summary-view');
+            updateFilterInputs(summaryFilterSelect.value);
+            calculateAndRenderSummary();
+        });
+        
+        showArchiveBtn.addEventListener('click', () => {
+            showView('archive-view');
+            renderBookingsList(allArchivedBookings, true);
+        });
+
         onAuthStateChanged(auth, async (user) => {
             try {
                 if (user) {
@@ -1353,26 +1455,50 @@
                     mainAppContainer.classList.remove('hidden');
 
                     const bookingsRef = collection(db, `artifacts/${appId}/users/${userId}/bookings`);
-                    const q = query(bookingsRef);
-                    onSnapshot(q, (querySnapshot) => {
+                    const archivedBookingsRef = collection(db, `artifacts/${appId}/users/${userId}/archived_bookings`);
+                    
+                    onSnapshot(bookingsRef, (querySnapshot) => {
+                        const today = new Date();
+                        today.setHours(0,0,0,0);
                         allBookings = [];
+                        let pastBookings = 0;
                         querySnapshot.forEach((doc) => {
-                            allBookings.push({ id: doc.id, ...doc.data() });
+                            const bookingData = { id: doc.id, ...doc.data() };
+                            // Filtra le prenotazioni passate dalla lista principale
+                            if (new Date(bookingData.checkOutDate) < today) {
+                                pastBookings++;
+                            } else {
+                                allBookings.push(bookingData);
+                            }
                         });
                         allBookings.sort((a, b) => new Date(a.checkInDate) - new Date(b.checkInDate));
-                        
                         renderBookingsList(allBookings);
                         renderCalendar();
                         calculateAndRenderSummary();
                     }, (error) => {
-                        console.error("Errore onSnapshot:", error);
-                        showModal('Errore di Connessione', 'Non è stato possibile connettersi al database in tempo reale.');
+                        console.error("Errore onSnapshot prenotazioni:", error);
+                        showModal('Errore di Connessione', 'Non è stato possibile connettersi al database in tempo reale per le prenotazioni.');
                     });
+                    
+                    onSnapshot(archivedBookingsRef, (querySnapshot) => {
+                        allArchivedBookings = [];
+                        querySnapshot.forEach((doc) => {
+                            allArchivedBookings.push({ id: doc.id, ...doc.data() });
+                        });
+                        allArchivedBookings.sort((a, b) => new Date(a.checkInDate) - new Date(b.checkInDate));
+                        // Se la vista dell'archivio è attiva, renderizza la lista
+                        if (!archiveView.classList.contains('hidden')) {
+                            renderBookingsList(allArchivedBookings, true);
+                        }
+                    }, (error) => {
+                        console.error("Errore onSnapshot archivio:", error);
+                        showModal('Errore di Connessione', 'Non è stato possibile connettersi al database in tempo reale per l\'archivio.');
+                    });
+
                 } else {
                     userId = null;
                     authContainer.classList.remove('hidden');
                     mainAppContainer.classList.add('hidden');
-                    // Se l'utente non è loggato, mostra solo la lista vuota.
                     bookingsList.innerHTML = `<p class="text-gray-500 text-center">Accedi per visualizzare le prenotazioni.</p>`;
                 }
             } catch (error) {
@@ -1445,7 +1571,6 @@
             };
 
             try {
-                // Aggiorna la logica per la collezione privata
                 await addDoc(collection(db, `artifacts/${appId}/users/${userId}/bookings`), newBooking);
                 showModal('Prenotazione Aggiunta', 'La prenotazione è stata aggiunta con successo!');
                 bookingForm.reset();
@@ -1457,42 +1582,22 @@
         
         // Gestione della visibilità delle viste
         showManagerBtn.addEventListener('click', () => {
-            managerView.classList.remove('hidden');
-            calendarView.classList.add('hidden');
-            summaryView.classList.add('hidden');
-            showManagerBtn.classList.replace('bg-gray-300', 'bg-blue-600');
-            showManagerBtn.classList.replace('text-gray-800', 'text-white');
-            showCalendarBtn.classList.replace('bg-blue-600', 'bg-gray-300');
-            showCalendarBtn.classList.replace('text-white', 'text-gray-800');
-            showSummaryBtn.classList.replace('bg-blue-600', 'bg-gray-300');
-            showSummaryBtn.classList.replace('text-white', 'text-gray-800');
+            showView('booking-manager-view');
         });
 
         showCalendarBtn.addEventListener('click', () => {
-            managerView.classList.add('hidden');
-            calendarView.classList.remove('hidden');
-            summaryView.classList.add('hidden');
-            showCalendarBtn.classList.replace('bg-gray-300', 'bg-blue-600');
-            showCalendarBtn.classList.replace('text-gray-800', 'text-white');
-            showManagerBtn.classList.replace('bg-blue-600', 'bg-gray-300');
-            showManagerBtn.classList.replace('text-white', 'text-gray-800');
-            showSummaryBtn.classList.replace('bg-blue-600', 'bg-gray-300');
-            showSummaryBtn.classList.replace('text-white', 'text-gray-800');
+            showView('booking-calendar-view');
             renderCalendar();
         });
         
         showSummaryBtn.addEventListener('click', () => {
-            managerView.classList.add('hidden');
-            calendarView.classList.add('hidden');
-            summaryView.classList.remove('hidden');
-            showSummaryBtn.classList.replace('bg-gray-300', 'bg-blue-600');
-            showSummaryBtn.classList.replace('text-gray-800', 'text-white');
-            showManagerBtn.classList.replace('bg-blue-600', 'bg-gray-300');
-            showManagerBtn.classList.replace('text-white', 'text-gray-800');
-            showCalendarBtn.classList.replace('bg-blue-600', 'bg-gray-300');
-            showCalendarBtn.classList.replace('text-white', 'text-gray-800');
+            showView('data-summary-view');
             updateFilterInputs(summaryFilterSelect.value);
             calculateAndRenderSummary();
+        });
+
+        showArchiveBtn.addEventListener('click', () => {
+            showView('archive-view');
         });
         
         // Funzione per calcolare la settimana dell'anno
@@ -1511,4 +1616,4 @@
     </script>
 </body>
 </html>
-versione top
+versione finale

@@ -202,6 +202,10 @@
                             <input type="checkbox" id="invoice-requested" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
                             <label for="invoice-requested" class="ml-2 text-sm font-medium text-gray-600">Richiesta Fattura</label>
                         </div>
+                        <div class="flex items-center">
+                            <input type="checkbox" id="booking-dot-com" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                            <label for="booking-dot-com" class="ml-2 text-sm font-medium text-gray-600">Prenotazione da Booking.com</label>
+                        </div>
                         <!-- Campi aggiuntivi nascosti -->
                         <div class="flex flex-col hidden" id="payment-method-container">
                             <label for="payment-method" class="text-sm font-medium text-gray-600 mb-1">Metodo di Pagamento</label>
@@ -423,6 +427,10 @@
                     <input type="checkbox" id="edit-invoice-requested" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
                     <label for="edit-invoice-requested" class="ml-2 text-sm font-medium text-gray-600">Richiesta Fattura</label>
                 </div>
+                <div class="flex items-center mb-4">
+                    <input type="checkbox" id="edit-booking-dot-com" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                    <label for="edit-booking-dot-com" class="ml-2 text-sm font-medium text-gray-600">Prenotazione da Booking.com</label>
+                </div>
                 <!-- Campi aggiuntivi di modifica nascosti -->
                 <div class="flex flex-col hidden" id="edit-payment-method-container">
                     <label for="edit-payment-method" class="text-sm font-medium text-gray-600 mb-1">Metodo di Pagamento</label>
@@ -538,6 +546,7 @@
         const editPartialPaymentContainer = document.getElementById('edit-partial-payment-container');
         const editPaymentMethod = document.getElementById('edit-payment-method');
         const editPartialPayment = document.getElementById('edit-partial-payment');
+        const editBookingDotCom = document.getElementById('edit-booking-dot-com');
         
         const currentMonthYearEl = document.getElementById('current-month-year');
         const calendarGridEl = document.getElementById('calendar-grid');
@@ -684,6 +693,8 @@
 
                 const invoiceText = booking.invoiceRequested ? 'Richiesta Fattura: Sì' : 'Richiesta Fattura: No';
                 const discountText = booking.discountRate > 0 ? `Sconto: ${booking.discountRate}%` : '';
+                const bookingComText = booking.isBookingCom ? ' | Booking.com' : '';
+
 
                 let extrasList = '';
                 if (booking.extras && booking.extras.length > 0) {
@@ -694,7 +705,7 @@
                 bookingEl.className = `flex flex-col md:flex-row items-start md:items-center justify-between p-4 border border-gray-200 rounded-lg shadow-sm`;
                 bookingEl.innerHTML = `
                     <div class="flex-grow mb-2 md:mb-0">
-                        <h3 class="text-lg font-bold text-gray-800">${booking.guestName}</h3>
+                        <h3 class="text-lg font-bold text-gray-800">${booking.guestName} ${bookingComText}</h3>
                         <p class="text-sm text-gray-600">Stanza: ${booking.roomName || 'N/D'}</p>
                         <p class="text-sm text-gray-600">
                             Check-in: ${booking.checkInDate} <br class="md:hidden">
@@ -767,6 +778,7 @@
                         editInvoiceRequested.checked = booking.invoiceRequested;
                         editArrivalTime.value = booking.arrivalTime;
                         editNotes.value = booking.notes;
+                        editBookingDotCom.checked = booking.isBookingCom;
                         
                         // Mostra/nasconde i campi di pagamento
                         if (booking.paymentStatus === 'pagato') {
@@ -810,76 +822,11 @@
         searchInput.addEventListener('input', (e) => {
             const searchTerm = e.target.value.toLowerCase();
             const filteredBookings = allBookings.filter(booking => {
-                const bookingEl = document.createElement('div');
-                bookingEl.className = `flex flex-col md:flex-row items-start md:items-center justify-between p-4 border border-gray-200 rounded-lg shadow-sm`;
-                const checkIn = new Date(booking.checkInDate);
-                const checkOut = new Date(booking.checkOutDate);
-                const diffTime = Math.abs(checkOut - checkIn);
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                const originalCost = (booking.dailyRate || 0) * diffDays;
-                const discountedCost = originalCost * (1 - (booking.discountRate || 0) / 100);
-                const extraCost = (booking.extras || []).reduce((sum, extra) => sum + (extra.cost || 0), 0);
-                const finalCost = discountedCost + extraCost;
-                
-                const arrivalTime = booking.arrivalTime ? ` | Arrivo: ${booking.arrivalTime}` : '';
-                const intolerances = booking.intolerances ? `<p class="text-sm text-red-600">Intolleranze: ${booking.intolerances}</p>` : '';
-                const notes = booking.notes ? `<p class="text-sm text-gray-600">Note: ${booking.notes}</p>` : '';
-                
-                const paymentStatusText = {
-                    'pagato': `Pagato (${booking.paymentMethod === 'contanti' ? 'Contanti' : booking.paymentMethod === 'carta_di_credito' ? 'Carta di Credito' : 'Bonifico'})`,
-                    'non_pagato': 'Non Pagato',
-                    'pagato_parzialmente': `Pagato Parzialmente (€${(booking.partialPaymentAmount || 0).toFixed(2)})`
-                };
-
-                const invoiceText = booking.invoiceRequested ? 'Richiesta Fattura: Sì' : 'Richiesta Fattura: No';
-                const discountText = booking.discountRate > 0 ? `Sconto: ${booking.discountRate}%` : '';
-
-                let extrasList = '';
-                if (booking.extras && booking.extras.length > 0) {
-                    extrasList = booking.extras.map(extra => `<li>${extra.description}: €${extra.cost.toFixed(2)} (${extra.date})</li>`).join('');
-                }
-
-                bookingEl.innerHTML = `
-                    <div class="flex-grow mb-2 md:mb-0">
-                        <h3 class="text-lg font-bold text-gray-800">${booking.guestName}</h3>
-                        <p class="text-sm text-gray-600">Stanza: ${booking.roomName || 'N/D'}</p>
-                        <p class="text-sm text-gray-600">
-                            Check-in: ${booking.checkInDate} <br class="md:hidden">
-                            Check-out: ${booking.checkOutDate} ${arrivalTime}
-                        </p>
-                        <p class="text-sm text-gray-600">Ospiti: ${booking.numGuests}</p>
-                        ${intolerances}
-                        ${notes}
-                        <p class="text-sm text-gray-600">Tariffa: €${(booking.dailyRate || 0).toFixed(2)} ${discountText ? `(${discountText})` : ''}</p>
-                        <p class="text-sm font-bold text-gray-800">Costo Totale: €${finalCost.toFixed(2)} (incluso €${extraCost.toFixed(2)} di extra)</p>
-                        <p class="text-sm text-gray-600">Stato Pagamento: ${paymentStatusText[booking.paymentStatus]}</p>
-                        <p class="text-sm text-gray-600">${invoiceText}</p>
-                        ${extrasList ? `<div class="mt-2"><p class="font-semibold text-sm">Extra:</p><ul class="list-disc list-inside">${extrasList}</ul></div>` : ''}
-                    </div>
-                    <div class="flex flex-wrap space-x-2 space-y-2 md:space-y-0 mt-4 md:mt-0 items-center justify-end">
-                        <button class="add-extra-btn bg-green-500 text-white font-bold py-1 px-3 rounded-lg hover:bg-green-600 transition-colors" data-id="${booking.id}">Aggiungi Extra</button>
-                        <button class="summary-btn bg-indigo-500 text-white font-bold py-1 px-3 rounded-lg hover:bg-indigo-600 transition-colors" data-id="${booking.id}">Conto</button>
-                        <button class="gemini-email-btn bg-pink-500 text-white font-bold py-1 px-3 rounded-lg hover:bg-pink-600 transition-colors" data-id="${booking.id}">✨ Scrivi E-mail</button>
-                        <button class="edit-btn bg-yellow-500 text-white font-bold py-1 px-3 rounded-lg hover:bg-yellow-600 transition-colors" data-id="${booking.id}">Modifica</button>
-                        <button class="delete-btn bg-red-600 text-white font-bold py-1 px-3 rounded-lg hover:bg-red-700 transition-colors" data-id="${booking.id}">Elimina</button>
-                    </div>
-                `;
-                const listEl = bookingsList;
-                if (searchTerm.length > 0 && booking.guestName.toLowerCase().includes(searchTerm)) {
-                    listEl.appendChild(bookingEl);
-                }
-                if (searchTerm === '') {
-                    const today = new Date();
-                    const checkoutDate = new Date(booking.checkOutDate);
-                    if (checkoutDate >= today) {
-                       listEl.appendChild(bookingEl);
-                    }
-                }
                 return booking.guestName.toLowerCase().includes(searchTerm);
             });
             renderFilteredBookings(filteredBookings);
         });
-        
+
         const renderFilteredBookings = (bookings) => {
             const listEl = bookingsList;
             listEl.innerHTML = '';
@@ -906,11 +853,7 @@
 
                 const invoiceText = booking.invoiceRequested ? 'Richiesta Fattura: Sì' : 'Richiesta Fattura: No';
                 const discountText = booking.discountRate > 0 ? `Sconto: ${booking.discountRate}%` : '';
-
-                let extrasList = '';
-                if (booking.extras && booking.extras.length > 0) {
-                    extrasList = booking.extras.map(extra => `<li>${extra.description}: €${extra.cost.toFixed(2)} (${extra.date})</li>`).join('');
-                }
+                const bookingComText = booking.isBookingCom ? ' | Booking.com' : '';
 
                 const bookingEl = document.createElement('div');
                 bookingEl.className = `flex flex-col md:flex-row items-start md:items-center justify-between p-4 border border-gray-200 rounded-lg shadow-sm`;
@@ -926,7 +869,7 @@
 
                 bookingEl.innerHTML = `
                     <div class="flex-grow mb-2 md:mb-0">
-                        <h3 class="text-lg font-bold text-gray-800">${booking.guestName}</h3>
+                        <h3 class="text-lg font-bold text-gray-800">${booking.guestName} ${bookingComText}</h3>
                         <p class="text-sm text-gray-600">Stanza: ${booking.roomName || 'N/D'}</p>
                         <p class="text-sm text-gray-600">
                             Check-in: ${booking.checkInDate} <br class="md:hidden">
@@ -1003,6 +946,7 @@
                         editInvoiceRequested.checked = booking.invoiceRequested;
                         editArrivalTime.value = booking.arrivalTime;
                         editNotes.value = booking.notes;
+                        editBookingDotCom.checked = booking.isBookingCom;
                         
                         // Mostra/nasconde i campi di pagamento
                         if (booking.paymentStatus === 'pagato') {
@@ -1041,7 +985,7 @@
                 });
             });
         };
-
+        
         // Gestione dell'invio del modulo di modifica
         editForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -1059,6 +1003,7 @@
                 invoiceRequested: editInvoiceRequested.checked,
                 arrivalTime: editArrivalTime.value,
                 notes: editNotes.value,
+                isBookingCom: editBookingDotCom.checked,
                 // Campi di pagamento
                 paymentMethod: editPaymentStatus.value === 'pagato' ? editPaymentMethod.value : null,
                 partialPaymentAmount: editPaymentStatus.value === 'pagato_parzialmente' ? parseFloat(editPartialPayment.value) : null,
@@ -1699,6 +1644,7 @@
                 paymentMethod: (document.getElementById('payment-status').value === 'pagato') ? document.getElementById('payment-method').value : null,
                 partialPaymentAmount: (document.getElementById('payment-status').value === 'pagato_parzialmente') ? parseFloat(document.getElementById('partial-payment').value) : null,
                 invoiceRequested: document.getElementById('invoice-requested').checked,
+                isBookingCom: document.getElementById('booking-dot-com').checked,
                 extras: [],
                 createdAt: new Date()
             };
@@ -1752,4 +1698,4 @@
     </script>
 </body>
 </html>
-aaa
+yyy

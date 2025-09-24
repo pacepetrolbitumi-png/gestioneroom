@@ -723,7 +723,7 @@
                     <div class="flex flex-wrap space-x-2 space-y-2 md:space-y-0 mt-4 md:mt-0 items-center justify-end">
                         <button class="add-extra-btn bg-green-500 text-white font-bold py-1 px-3 rounded-lg hover:bg-green-600 transition-colors" data-id="${booking.id}">Aggiungi Extra</button>
                         <button class="summary-btn bg-indigo-500 text-white font-bold py-1 px-3 rounded-lg hover:bg-indigo-600 transition-colors" data-id="${booking.id}">Conto</button>
-                        <button class="whatsapp-btn bg-green-500 text-white font-bold py-1 px-3 rounded-lg hover:bg-green-600 transition-colors" data-id="${booking.id}">Invia WhatsApp</button>
+                        <button class="gemini-email-btn bg-pink-500 text-white font-bold py-1 px-3 rounded-lg hover:bg-pink-600 transition-colors" data-id="${booking.id}">✨ Scrivi E-mail</button>
                         <button class="edit-btn bg-yellow-500 text-white font-bold py-1 px-3 rounded-lg hover:bg-yellow-600 transition-colors" data-id="${booking.id}">Modifica</button>
                         <button class="delete-btn bg-red-600 text-white font-bold py-1 px-3 rounded-lg hover:bg-red-700 transition-colors" data-id="${booking.id}">Elimina</button>
                     </div>
@@ -749,12 +749,12 @@
                 });
             });
             
-            document.querySelectorAll('.whatsapp-btn').forEach(btn => {
+            document.querySelectorAll('.gemini-email-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     const bookingId = e.target.dataset.id;
                     const booking = allBookings.find(b => b.id === bookingId);
                     if (booking) {
-                        generateWhatsappMessage(booking);
+                        generateEmail(booking);
                     }
                 });
             });
@@ -887,7 +887,7 @@
                     <div class="flex flex-wrap space-x-2 space-y-2 md:space-y-0 mt-4 md:mt-0 items-center justify-end">
                         <button class="add-extra-btn bg-green-500 text-white font-bold py-1 px-3 rounded-lg hover:bg-green-600 transition-colors" data-id="${booking.id}">Aggiungi Extra</button>
                         <button class="summary-btn bg-indigo-500 text-white font-bold py-1 px-3 rounded-lg hover:bg-indigo-600 transition-colors" data-id="${booking.id}">Conto</button>
-                        <button class="whatsapp-btn bg-green-500 text-white font-bold py-1 px-3 rounded-lg hover:bg-green-600 transition-colors" data-id="${booking.id}">Invia WhatsApp</button>
+                        <button class="gemini-email-btn bg-pink-500 text-white font-bold py-1 px-3 rounded-lg hover:bg-pink-600 transition-colors" data-id="${booking.id}">✨ Scrivi E-mail</button>
                         <button class="edit-btn bg-yellow-500 text-white font-bold py-1 px-3 rounded-lg hover:bg-yellow-600 transition-colors" data-id="${booking.id}">Modifica</button>
                         <button class="delete-btn bg-red-600 text-white font-bold py-1 px-3 rounded-lg hover:bg-red-700 transition-colors" data-id="${booking.id}">Elimina</button>
                     </div>
@@ -917,180 +917,12 @@
                 });
             });
             
-            document.querySelectorAll('.whatsapp-btn').forEach(btn => {
+            document.querySelectorAll('.gemini-email-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     const bookingId = e.target.dataset.id;
                     const booking = allBookings.find(b => b.id === bookingId);
                     if (booking) {
-                        generateWhatsappMessage(booking);
-                    }
-                });
-            });
-
-            document.querySelectorAll('.edit-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const id = e.target.dataset.id;
-                    const booking = allBookings.find(b => b.id === id);
-                    if (booking) {
-                        // Popola il modale di modifica
-                        editBookingId.value = booking.id;
-                        editGuestName.value = booking.guestName;
-                        editRoomName.value = booking.roomName;
-                        editNumGuests.value = booking.numGuests;
-                        editDailyRate.value = booking.dailyRate;
-                        editCheckinDate.value = booking.checkInDate;
-                        editCheckoutDate.value = booking.checkOutDate;
-                        editDiscountRate.value = booking.discountRate;
-                        editPaymentStatus.value = booking.paymentStatus;
-                        editIntolerances.value = booking.intolerances;
-                        editInvoiceRequested.checked = booking.invoiceRequested;
-                        editArrivalTime.value = booking.arrivalTime;
-                        editNotes.value = booking.notes;
-                        editBookingDotCom.checked = booking.isBookingCom;
-                        
-                        // Mostra/nasconde i campi di pagamento
-                        if (booking.paymentStatus === 'pagato') {
-                            editPaymentMethodContainer.classList.remove('hidden');
-                            editPartialPaymentContainer.classList.add('hidden');
-                            editPaymentMethod.value = booking.paymentMethod;
-                        } else if (booking.paymentStatus === 'pagato_parzialmente') {
-                            editPaymentMethodContainer.classList.add('hidden');
-                            editPartialPaymentContainer.classList.remove('hidden');
-                            editPartialPayment.value = booking.partialPaymentAmount;
-                        } else {
-                            editPaymentMethodContainer.classList.add('hidden');
-                            editPartialPaymentContainer.classList.add('hidden');
-                        }
-
-                        // Apri il modale
-                        editModal.classList.remove('hidden');
-                    }
-                });
-            });
-
-            document.querySelectorAll('.delete-btn').forEach(btn => {
-                btn.addEventListener('click', async (e) => {
-                    const id = e.target.dataset.id;
-                    const confirmDelete = await showModal('Elimina Prenotazione', 'Sei sicuro di voler eliminare questa prenotazione?', true);
-                    if (confirmDelete) {
-                        try {
-                            const collectionPath = `artifacts/${appId}/users/${userId}/bookings`;
-                            await deleteDoc(doc(db, collectionPath, id));
-                            showModal('Successo', 'Prenotazione eliminata con successo.');
-                        } catch (error) {
-                            console.error("Errore durante l'eliminazione della prenotazione:", error);
-                            showModal('Errore', 'Non è stato possibile eliminare la prenotazione. Controlla la console per i dettagli.');
-                        }
-                    }
-                });
-            });
-        };
-        
-        // Aggiungi un nuovo listener all'input di ricerca per filtrare le prenotazioni
-        searchInput.addEventListener('input', (e) => {
-            const searchTerm = e.target.value.toLowerCase();
-            const filteredBookings = allBookings.filter(booking => {
-                return booking.guestName.toLowerCase().includes(searchTerm);
-            });
-            renderFilteredBookings(filteredBookings);
-        });
-
-        const renderFilteredBookings = (bookings) => {
-            const listEl = bookingsList;
-            listEl.innerHTML = '';
-            
-            bookings.forEach(booking => {
-                const checkIn = new Date(booking.checkInDate);
-                const checkOut = new Date(booking.checkOutDate);
-                const diffTime = Math.abs(checkOut - checkIn);
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                const originalCost = (booking.dailyRate || 0) * diffDays;
-                const discountedCost = originalCost * (1 - (booking.discountRate || 0) / 100);
-                const extraCost = (booking.extras || []).reduce((sum, extra) => sum + (extra.cost || 0), 0);
-                const finalCost = discountedCost + extraCost;
-                
-                const arrivalTime = booking.arrivalTime ? ` | Arrivo: ${booking.arrivalTime}` : '';
-                const intolerances = booking.intolerances ? `<p class="text-sm text-red-600">Intolleranze: ${booking.intolerances}</p>` : '';
-                const notes = booking.notes ? `<p class="text-sm text-gray-600">Note: ${booking.notes}</p>` : '';
-                
-                const paymentStatusText = {
-                    'pagato': `Pagato (${booking.paymentMethod === 'contanti' ? 'Contanti' : booking.paymentMethod === 'carta_di_credito' ? 'Carta di Credito' : 'Bonifico'})`,
-                    'non_pagato': 'Non Pagato',
-                    'pagato_parzialmente': `Pagato Parzialmente (€${(booking.partialPaymentAmount || 0).toFixed(2)})`
-                };
-
-                const invoiceText = booking.invoiceRequested ? 'Richiesta Fattura: Sì' : 'Richiesta Fattura: No';
-                const discountText = booking.discountRate > 0 ? `Sconto: ${booking.discountRate}%` : '';
-                const bookingComText = booking.isBookingCom ? ' | Booking.com' : '';
-
-                const bookingEl = document.createElement('div');
-                bookingEl.className = `flex flex-col md:flex-row items-start md:items-center justify-between p-4 border border-gray-200 rounded-lg shadow-sm`;
-                
-                const today = new Date();
-                const checkinDate = new Date(booking.checkInDate);
-                const checkoutDate = new Date(booking.checkOutDate);
-                
-                // Aggiungi una classe per le prenotazioni passate
-                if (checkoutDate < today) {
-                    bookingEl.classList.add('archived-booking');
-                }
-
-                bookingEl.innerHTML = `
-                    <div class="flex-grow mb-2 md:mb-0">
-                        <h3 class="text-lg font-bold text-gray-800">${booking.guestName} ${bookingComText}</h3>
-                        <p class="text-sm text-gray-600">Stanza: ${booking.roomName || 'N/D'}</p>
-                        <p class="text-sm text-gray-600">
-                            Check-in: ${booking.checkInDate} <br class="md:hidden">
-                            Check-out: ${booking.checkOutDate} ${arrivalTime}
-                        </p>
-                        <p class="text-sm text-gray-600">Ospiti: ${booking.numGuests}</p>
-                        ${intolerances}
-                        ${notes}
-                        <p class="text-sm text-gray-600">Tariffa: €${(booking.dailyRate || 0).toFixed(2)} ${discountText ? `(${discountText})` : ''}</p>
-                        <p class="text-sm font-bold text-gray-800">Costo Totale: €${finalCost.toFixed(2)} (incluso €${extraCost.toFixed(2)} di extra)</p>
-                        <p class="text-sm text-gray-600">Stato Pagamento: ${paymentStatusText[booking.paymentStatus]}</p>
-                        <p class="text-sm text-gray-600">${invoiceText}</p>
-                        ${extrasList ? `<div class="mt-2"><p class="font-semibold text-sm">Extra:</p><ul class="list-disc list-inside">${extrasList}</ul></div>` : ''}
-                    </div>
-                    <div class="flex flex-wrap space-x-2 space-y-2 md:space-y-0 mt-4 md:mt-0 items-center justify-end">
-                        <button class="add-extra-btn bg-green-500 text-white font-bold py-1 px-3 rounded-lg hover:bg-green-600 transition-colors" data-id="${booking.id}">Aggiungi Extra</button>
-                        <button class="summary-btn bg-indigo-500 text-white font-bold py-1 px-3 rounded-lg hover:bg-indigo-600 transition-colors" data-id="${booking.id}">Conto</button>
-                        <button class="whatsapp-btn bg-green-500 text-white font-bold py-1 px-3 rounded-lg hover:bg-green-600 transition-colors" data-id="${booking.id}">Invia WhatsApp</button>
-                        <button class="edit-btn bg-yellow-500 text-white font-bold py-1 px-3 rounded-lg hover:bg-yellow-600 transition-colors" data-id="${booking.id}">Modifica</button>
-                        <button class="delete-btn bg-red-600 text-white font-bold py-1 px-3 rounded-lg hover:bg-red-700 transition-colors" data-id="${booking.id}">Elimina</button>
-                    </div>
-                `;
-                listEl.appendChild(bookingEl);
-            });
-            
-            if (bookings.length === 0) {
-                 listEl.innerHTML = `<p class="text-center text-gray-500">Nessuna prenotazione trovata per il cliente.</p>`;
-            }
-            // Ri-aggiungi i listener dopo aver aggiornato la lista
-            document.querySelectorAll('.add-extra-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const bookingId = e.target.dataset.id;
-                    extraModal.dataset.bookingId = bookingId;
-                    extraModal.classList.remove('hidden');
-                });
-            });
-
-            document.querySelectorAll('.summary-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const bookingId = e.target.dataset.id;
-                    const booking = allBookings.find(b => b.id === bookingId);
-                    if (booking) {
-                        showSummaryModal(booking);
-                    }
-                });
-            });
-            
-            document.querySelectorAll('.whatsapp-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const bookingId = e.target.dataset.id;
-                    const booking = allBookings.find(b => b.id === bookingId);
-                    if (booking) {
-                        generateWhatsappMessage(booking);
+                        generateEmail(booking);
                     }
                 });
             });
@@ -1206,54 +1038,7 @@
             editModal.classList.add('hidden');
         });
 
-        // Funzione per generare il messaggio WhatsApp
-        const generateWhatsappMessage = (booking) => {
-            const googleMapsLink = "https://maps.app.goo.gl/k1V3qH1f8V8m9H9P7";
-            const guestName = booking.guestName;
-            const roomName = booking.roomName;
-            let roomCode = '';
-
-            // Assegna il codice in base alla stanza
-            switch (roomName) {
-                case 'Malva':
-                    roomCode = '00111';
-                    break;
-                case 'Margherita':
-                    roomCode = '00222';
-                    break;
-                case 'Papavero':
-                    roomCode = '00333';
-                    break;
-                case 'Ginestra':
-                    roomCode = '00444';
-                    break;
-                case 'Camomilla':
-                    roomCode = '00555';
-                    break;
-                case 'Gelsomino':
-                    roomCode = '00666';
-                    break;
-            }
-
-            // Aggiungi le intolleranze al testo se presenti
-            let intolerancesText = '';
-            if (booking.intolerances) {
-                intolerancesText = `Per eventuali intolleranze alimentari o allergie per la prima colazione si prega di comunicarcelo.`;
-            }
-
-            const message = `Gentile Cliente ${guestName}, la ringraziamo per aver scelto Tenuta Coppa Zuccari per il Vostro soggiorno in Abruzzo.\n\nLa sua camera è la ${roomName}.\nIl check in è dalle 15 alle 20. Si prega di comunicarci il vostro arrivo.\nIl codice a Lei assegnato per poter entrare in Tenuta in autonomia è lo ${roomCode}.\n${intolerancesText}\nInfine, ecco la posizione Google Maps di Tenuta Coppa Zuccari: ${googleMapsLink}`;
-            
-            // Creare un textarea temporaneo per copiare il testo
-            const tempTextArea = document.createElement('textarea');
-            tempTextArea.value = message;
-            document.body.appendChild(tempTextArea);
-            tempTextArea.select();
-            document.execCommand('copy');
-            document.body.removeChild(tempTextArea);
-            showModal('Messaggio Copiato!', 'Il messaggio è stato copiato negli appunti. Ora puoi incollarlo su WhatsApp.');
-        };
-
-        // Funzioni Gemini API (non più utilizzate per l'email, ma mantenute per altre potenziali funzioni)
+        // Funzioni Gemini API
         const callGeminiAPI = async (prompt, title) => {
             geminiModal.classList.remove('hidden');
             geminiTitle.textContent = title;
@@ -1294,6 +1079,21 @@
                 geminiLoading.classList.add('hidden');
                 geminiLoading.classList.remove('flex');
             }
+        };
+        
+        const generateEmail = (booking) => {
+            const checkIn = new Date(booking.checkInDate);
+            const checkOut = new Date(booking.checkOutDate);
+            const diffTime = Math.abs(checkOut - checkIn);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            const originalCost = (booking.dailyRate || 0) * diffDays;
+            const discountAmount = originalCost * (booking.discountRate || 0) / 100;
+            const discountedCost = originalCost - discountAmount;
+            const extraCost = (booking.extras || []).reduce((sum, extra) => sum + (extra.cost || 0), 0);
+            const finalCost = discountedCost + extraCost;
+
+            const prompt = `Scrivi una bozza di e-mail di benvenuto concisa e professionale per ${booking.guestName}. L'email deve confermare la prenotazione per la stanza ${booking.roomName}, le date di check-in (${booking.checkInDate}) e check-out (${booking.checkOutDate}), il numero di ospiti (${booking.numGuests}) e il costo totale del soggiorno (${finalCost.toFixed(2)} euro). Aggiungi un breve messaggio di benvenuto e di augurio per un piacevole soggiorno.`;
+            callGeminiAPI(prompt, "Bozza E-mail di Benvenuto");
         };
 
         geminiCopyBtn.addEventListener('click', () => {
@@ -1898,4 +1698,4 @@
     </script>
 </body>
 </html>
-uuu
+sss

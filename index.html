@@ -227,7 +227,7 @@
 
                 <!-- Lista delle prenotazioni -->
                 <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <h2 class="text-2xl font-semibold text-gray-700 mb-4">Prenotazioni in corso</h2>
+                    <h2 class="text-2xl font-semibold text-gray-700 mb-4">Prenotazioni in corso e passate</h2>
                     <div id="bookings-list" class="space-y-4">
                         <p class="text-gray-500 text-center">Caricamento delle prenotazioni...</p>
                     </div>
@@ -666,6 +666,7 @@
         // Funzioni per la vista Gestione Prenotazioni
         const renderBookingsList = (bookings) => {
             const listEl = bookingsList;
+            listEl.innerHTML = '';
             
             // Definisci la data odierna per filtrare le prenotazioni
             const today = new Date();
@@ -676,8 +677,6 @@
                 const checkoutDate = new Date(booking.checkOutDate);
                 return checkoutDate >= today;
             });
-            
-            listEl.innerHTML = '';
             
             // Ordina le prenotazioni in base alla data di check-in
             activeBookings.sort((a, b) => new Date(a.checkInDate) - new Date(b.checkInDate));
@@ -846,6 +845,11 @@
             const listEl = bookingsList;
             listEl.innerHTML = '';
             
+            if (bookings.length === 0) {
+                 listEl.innerHTML = `<p class="text-center text-gray-500">Nessuna prenotazione trovata per il cliente.</p>`;
+                 return;
+            }
+
             bookings.forEach(booking => {
                 const checkIn = new Date(booking.checkInDate);
                 const checkOut = new Date(booking.checkOutDate);
@@ -874,7 +878,6 @@
                 bookingEl.className = `flex flex-col md:flex-row items-start md:items-center justify-between p-4 border border-gray-200 rounded-lg shadow-sm`;
                 
                 const today = new Date();
-                const checkinDate = new Date(booking.checkInDate);
                 const checkoutDate = new Date(booking.checkOutDate);
                 
                 // Aggiungi una classe per le prenotazioni passate
@@ -909,10 +912,6 @@
                 `;
                 listEl.appendChild(bookingEl);
             });
-            
-            if (bookings.length === 0) {
-                 listEl.innerHTML = `<p class="text-center text-gray-500">Nessuna prenotazione trovata per il cliente.</p>`;
-            }
             // Ri-aggiungi i listener dopo aver aggiornato la lista
             document.querySelectorAll('.add-extra-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
@@ -1697,4 +1696,4 @@
     </script>
 </body>
 </html>
-ttt
+eee

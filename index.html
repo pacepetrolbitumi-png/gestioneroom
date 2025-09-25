@@ -217,7 +217,7 @@
                         </div>
                         <div class="flex flex-col hidden" id="partial-payment-container">
                             <label for="partial-payment" class="text-sm font-medium text-gray-600 mb-1">Importo Parziale (€)</label>
-                            <input type="number" id="partial-payment" min="0" value="0" class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                            <input type="number" id="partial-payment" min="0" class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
                         </div>
                     </div>
                     <button type="submit" class="w-full mt-4 bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
@@ -532,7 +532,7 @@
         const editGuestName = document.getElementById('edit-guest-name');
         const editRoomName = document.getElementById('edit-room-name');
         const editNumGuests = document.getElementById('edit-num-guests');
-        const editDailyRate = document = document.getElementById('edit-daily-rate');
+        const editDailyRate = document.getElementById('edit-daily-rate');
         const editCheckinDate = document.getElementById('edit-checkin-date');
         const editCheckoutDate = document.getElementById('edit-checkout-date');
         const editDiscountRate = document.getElementById('edit-discount-rate');
@@ -1686,10 +1686,18 @@
             return 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
         };
         
-        window.addEventListener('DOMContentLoaded', () => {
+        window.addEventListener('DOMContentLoaded', async () => {
             updateFilterInputs(summaryFilterSelect.value);
+            // Autenticazione iniziale al caricamento della pagina
+            // Controlla se è disponibile un token personalizzato, altrimenti usa l'autenticazione anonima.
+            // Questo assicura che l'app sia utilizzabile immediatamente, indipendentemente dallo stato di login.
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                 await signInWithCustomToken(auth, __initial_auth_token);
+            } else {
+                 await signInAnonymously(auth);
+            }
         });
     </script>
 </body>
 </html>
-ooo
+bbb

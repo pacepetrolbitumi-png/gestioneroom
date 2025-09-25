@@ -986,6 +986,174 @@
             });
         };
         
+        // Aggiungi un nuovo listener all'input di ricerca per filtrare le prenotazioni
+        searchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const filteredBookings = allBookings.filter(booking => {
+                return booking.guestName.toLowerCase().includes(searchTerm);
+            });
+            renderFilteredBookings(filteredBookings);
+        });
+
+        const renderFilteredBookings = (bookings) => {
+            const listEl = bookingsList;
+            listEl.innerHTML = '';
+            
+            bookings.forEach(booking => {
+                const checkIn = new Date(booking.checkInDate);
+                const checkOut = new Date(booking.checkOutDate);
+                const diffTime = Math.abs(checkOut - checkIn);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                const originalCost = (booking.dailyRate || 0) * diffDays;
+                const discountedCost = originalCost * (1 - (booking.discountRate || 0) / 100);
+                const extraCost = (booking.extras || []).reduce((sum, extra) => sum + (extra.cost || 0), 0);
+                const finalCost = discountedCost + extraCost;
+                
+                const arrivalTime = booking.arrivalTime ? ` | Arrivo: ${booking.arrivalTime}` : '';
+                const intolerances = booking.intolerances ? `<p class="text-sm text-red-600">Intolleranze: ${booking.intolerances}</p>` : '';
+                const notes = booking.notes ? `<p class="text-sm text-gray-600">Note: ${booking.notes}</p>` : '';
+                
+                const paymentStatusText = {
+                    'pagato': `Pagato (${booking.paymentMethod === 'contanti' ? 'Contanti' : booking.paymentMethod === 'carta_di_credito' ? 'Carta di Credito' : 'Bonifico'})`,
+                    'non_pagato': 'Non Pagato',
+                    'pagato_parzialmente': `Pagato Parzialmente (€${(booking.partialPaymentAmount || 0).toFixed(2)})`
+                };
+
+                const invoiceText = booking.invoiceRequested ? 'Richiesta Fattura: Sì' : 'Richiesta Fattura: No';
+                const discountText = booking.discountRate > 0 ? `Sconto: ${booking.discountRate}%` : '';
+                const bookingComText = booking.isBookingCom ? ' | Booking.com' : '';
+
+                const bookingEl = document.createElement('div');
+                bookingEl.className = `flex flex-col md:flex-row items-start md:items-center justify-between p-4 border border-gray-200 rounded-lg shadow-sm`;
+                
+                const today = new Date();
+                const checkinDate = new Date(booking.checkInDate);
+                const checkoutDate = new Date(booking.checkOutDate);
+                
+                // Aggiungi una classe per le prenotazioni passate
+                if (checkoutDate < today) {
+                    bookingEl.classList.add('archived-booking');
+                }
+
+                bookingEl.innerHTML = `
+                    <div class="flex-grow mb-2 md:mb-0">
+                        <h3 class="text-lg font-bold text-gray-800">${booking.guestName} ${bookingComText}</h3>
+                        <p class="text-sm text-gray-600">Stanza: ${booking.roomName || 'N/D'}</p>
+                        <p class="text-sm text-gray-600">
+                            Check-in: ${booking.checkInDate} <br class="md:hidden">
+                            Check-out: ${booking.checkOutDate} ${arrivalTime}
+                        </p>
+                        <p class="text-sm text-gray-600">Ospiti: ${booking.numGuests}</p>
+                        ${intolerances}
+                        ${notes}
+                        <p class="text-sm text-gray-600">Tariffa: €${(booking.dailyRate || 0).toFixed(2)} ${discountText ? `(${discountText})` : ''}</p>
+                        <p class="text-sm font-bold text-gray-800">Costo Totale: €${finalCost.toFixed(2)} (incluso €${extraCost.toFixed(2)} di extra)</p>
+                        <p class="text-sm text-gray-600">Stato Pagamento: ${paymentStatusText[booking.paymentStatus]}</p>
+                        <p class="text-sm text-gray-600">${invoiceText}</p>
+                        ${extrasList ? `<div class="mt-2"><p class="font-semibold text-sm">Extra:</p><ul class="list-disc list-inside">${extrasList}</ul></div>` : ''}
+                    </div>
+                    <div class="flex flex-wrap space-x-2 space-y-2 md:space-y-0 mt-4 md:mt-0 items-center justify-end">
+                        <button class="add-extra-btn bg-green-500 text-white font-bold py-1 px-3 rounded-lg hover:bg-green-600 transition-colors" data-id="${booking.id}">Aggiungi Extra</button>
+                        <button class="summary-btn bg-indigo-500 text-white font-bold py-1 px-3 rounded-lg hover:bg-indigo-600 transition-colors" data-id="${booking.id}">Conto</button>
+                        <button class="gemini-email-btn bg-pink-500 text-white font-bold py-1 px-3 rounded-lg hover:bg-pink-600 transition-colors" data-id="${booking.id}">✨ Scrivi E-mail</button>
+                        <button class="edit-btn bg-yellow-500 text-white font-bold py-1 px-3 rounded-lg hover:bg-yellow-600 transition-colors" data-id="${booking.id}">Modifica</button>
+                        <button class="delete-btn bg-red-600 text-white font-bold py-1 px-3 rounded-lg hover:bg-red-700 transition-colors" data-id="${booking.id}">Elimina</button>
+                    </div>
+                `;
+                listEl.appendChild(bookingEl);
+            });
+            
+            if (bookings.length === 0) {
+                 listEl.innerHTML = `<p class="text-center text-gray-500">Nessuna prenotazione trovata per il cliente.</p>`;
+            }
+            // Ri-aggiungi i listener dopo aver aggiornato la lista
+            document.querySelectorAll('.add-extra-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const bookingId = e.target.dataset.id;
+                    extraModal.dataset.bookingId = bookingId;
+                    extraModal.classList.remove('hidden');
+                });
+            });
+
+            document.querySelectorAll('.summary-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const bookingId = e.target.dataset.id;
+                    const booking = allBookings.find(b => b.id === bookingId);
+                    if (booking) {
+                        showSummaryModal(booking);
+                    }
+                });
+            });
+            
+            document.querySelectorAll('.gemini-email-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const bookingId = e.target.dataset.id;
+                    const booking = allBookings.find(b => b.id === bookingId);
+                    if (booking) {
+                        generateEmail(booking);
+                    }
+                });
+            });
+
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = e.target.dataset.id;
+                    const booking = allBookings.find(b => b.id === id);
+                    if (booking) {
+                        // Popola il modale di modifica
+                        editBookingId.value = booking.id;
+                        editGuestName.value = booking.guestName;
+                        editRoomName.value = booking.roomName;
+                        editNumGuests.value = booking.numGuests;
+                        editDailyRate.value = booking.dailyRate;
+                        editCheckinDate.value = booking.checkInDate;
+                        editCheckoutDate.value = booking.checkOutDate;
+                        editDiscountRate.value = booking.discountRate;
+                        editPaymentStatus.value = booking.paymentStatus;
+                        editIntolerances.value = booking.intolerances;
+                        editInvoiceRequested.checked = booking.invoiceRequested;
+                        editArrivalTime.value = booking.arrivalTime;
+                        editNotes.value = booking.notes;
+                        editBookingDotCom.checked = booking.isBookingCom;
+                        
+                        // Mostra/nasconde i campi di pagamento
+                        if (booking.paymentStatus === 'pagato') {
+                            editPaymentMethodContainer.classList.remove('hidden');
+                            editPartialPaymentContainer.classList.add('hidden');
+                            editPaymentMethod.value = booking.paymentMethod;
+                        } else if (booking.paymentStatus === 'pagato_parzialmente') {
+                            editPaymentMethodContainer.classList.add('hidden');
+                            editPartialPaymentContainer.classList.remove('hidden');
+                            editPartialPayment.value = booking.partialPaymentAmount;
+                        } else {
+                            editPaymentMethodContainer.classList.add('hidden');
+                            editPartialPaymentContainer.classList.add('hidden');
+                        }
+
+                        // Apri il modale
+                        editModal.classList.remove('hidden');
+                    }
+                });
+            });
+
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const id = e.target.dataset.id;
+                    const confirmDelete = await showModal('Elimina Prenotazione', 'Sei sicuro di voler eliminare questa prenotazione?', true);
+                    if (confirmDelete) {
+                        try {
+                            const collectionPath = `artifacts/${appId}/users/${userId}/bookings`;
+                            await deleteDoc(doc(db, collectionPath, id));
+                            showModal('Successo', 'Prenotazione eliminata con successo.');
+                        } catch (error) {
+                            console.error("Errore durante l'eliminazione della prenotazione:", error);
+                            showModal('Errore', 'Non è stato possibile eliminare la prenotazione. Controlla la console per i dettagli.');
+                        }
+                    }
+                });
+            });
+        };
+        
         // Gestione dell'invio del modulo di modifica
         editForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -1698,4 +1866,4 @@
     </script>
 </body>
 </html>
-sss
+www

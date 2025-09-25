@@ -532,7 +532,7 @@
         const editGuestName = document.getElementById('edit-guest-name');
         const editRoomName = document.getElementById('edit-room-name');
         const editNumGuests = document.getElementById('edit-num-guests');
-        const editDailyRate = document.getElementById('edit-daily-rate');
+        const editDailyRate = document = document.getElementById('edit-daily-rate');
         const editCheckinDate = document.getElementById('edit-checkin-date');
         const editCheckoutDate = document.getElementById('edit-checkout-date');
         const editDiscountRate = document.getElementById('edit-discount-rate');
@@ -1098,12 +1098,8 @@
 
         geminiCopyBtn.addEventListener('click', () => {
             const textToCopy = geminiContent.textContent;
-            navigator.clipboard.writeText(textToCopy).then(() => {
-                showModal('Copiato!', 'Il testo è stato copiato negli appunti.');
-            }).catch(err => {
-                console.error('Errore durante la copia del testo: ', err);
-                showModal('Errore', 'Non è stato possibile copiare il testo.');
-            });
+            document.execCommand('copy');
+            showModal('Copiato!', 'Il testo è stato copiato negli appunti.');
         });
 
         geminiCloseBtn.addEventListener('click', () => {
@@ -1696,4 +1692,4 @@
     </script>
 </body>
 </html>
-eee
+ooo

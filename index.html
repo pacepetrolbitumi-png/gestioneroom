@@ -202,10 +202,6 @@
                             <input type="checkbox" id="invoice-requested" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
                             <label for="invoice-requested" class="ml-2 text-sm font-medium text-gray-600">Richiesta Fattura</label>
                         </div>
-                        <div class="flex items-center">
-                            <input type="checkbox" id="booking-dot-com" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                            <label for="booking-dot-com" class="ml-2 text-sm font-medium text-gray-600">Prenotazione da Booking.com</label>
-                        </div>
                         <!-- Campi aggiuntivi nascosti -->
                         <div class="flex flex-col hidden" id="payment-method-container">
                             <label for="payment-method" class="text-sm font-medium text-gray-600 mb-1">Metodo di Pagamento</label>
@@ -217,7 +213,7 @@
                         </div>
                         <div class="flex flex-col hidden" id="partial-payment-container">
                             <label for="partial-payment" class="text-sm font-medium text-gray-600 mb-1">Importo Parziale (€)</label>
-                            <input type="number" id="partial-payment" min="0" class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                            <input type="number" id="partial-payment" min="0" value="0" class="p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
                         </div>
                     </div>
                     <button type="submit" class="w-full mt-4 bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
@@ -227,7 +223,7 @@
 
                 <!-- Lista delle prenotazioni -->
                 <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <h2 class="text-2xl font-semibold text-gray-700 mb-4">Prenotazioni in corso e passate</h2>
+                    <h2 class="text-2xl font-semibold text-gray-700 mb-4">Prenotazioni in corso</h2>
                     <div id="bookings-list" class="space-y-4">
                         <p class="text-gray-500 text-center">Caricamento delle prenotazioni...</p>
                     </div>
@@ -427,10 +423,6 @@
                     <input type="checkbox" id="edit-invoice-requested" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
                     <label for="edit-invoice-requested" class="ml-2 text-sm font-medium text-gray-600">Richiesta Fattura</label>
                 </div>
-                <div class="flex items-center mb-4">
-                    <input type="checkbox" id="edit-booking-dot-com" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                    <label for="edit-booking-dot-com" class="ml-2 text-sm font-medium text-gray-600">Prenotazione da Booking.com</label>
-                </div>
                 <!-- Campi aggiuntivi di modifica nascosti -->
                 <div class="flex flex-col hidden" id="edit-payment-method-container">
                     <label for="edit-payment-method" class="text-sm font-medium text-gray-600 mb-1">Metodo di Pagamento</label>
@@ -546,7 +538,6 @@
         const editPartialPaymentContainer = document.getElementById('edit-partial-payment-container');
         const editPaymentMethod = document.getElementById('edit-payment-method');
         const editPartialPayment = document.getElementById('edit-partial-payment');
-        const editBookingDotCom = document.getElementById('edit-booking-dot-com');
         
         const currentMonthYearEl = document.getElementById('current-month-year');
         const calendarGridEl = document.getElementById('calendar-grid');
@@ -648,44 +639,16 @@
                 paymentMethodContainer.classList.add('hidden');
             }
         });
-        
-        editPaymentStatus.addEventListener('change', (e) => {
-            if (e.target.value === 'pagato_parzialmente') {
-                editPartialPaymentContainer.classList.remove('hidden');
-                editPaymentMethodContainer.classList.add('hidden');
-            } else if (e.target.value === 'pagato') {
-                editPartialPaymentContainer.classList.add('hidden');
-                editPaymentMethodContainer.classList.remove('hidden');
-            }
-            else {
-                editPartialPaymentContainer.classList.add('hidden');
-                editPaymentMethodContainer.classList.add('hidden');
-            }
-        });
 
         // Funzioni per la vista Gestione Prenotazioni
         const renderBookingsList = (bookings) => {
             const listEl = bookingsList;
-            listEl.innerHTML = '';
-            
-            // Definisci la data odierna per filtrare le prenotazioni
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-
-            // Filtra le prenotazioni per visualizzare solo quelle attive o future
-            const activeBookings = bookings.filter(booking => {
-                const checkoutDate = new Date(booking.checkOutDate);
-                return checkoutDate >= today;
-            });
-            
-            // Ordina le prenotazioni in base alla data di check-in
-            activeBookings.sort((a, b) => new Date(a.checkInDate) - new Date(b.checkInDate));
-
-            if (activeBookings.length === 0) {
-                listEl.innerHTML = `<p class="text-center text-gray-500">Nessuna prenotazione in corso o futura.</p>`;
+            if (bookings.length === 0) {
+                listEl.innerHTML = `<p class="text-center text-gray-500">Nessuna prenotazione trovata.</p>`;
+                return;
             }
-            
-            activeBookings.forEach(booking => {
+            listEl.innerHTML = '';
+            bookings.forEach(booking => {
                 const checkIn = new Date(booking.checkInDate);
                 const checkOut = new Date(booking.checkOutDate);
                 const diffTime = Math.abs(checkOut - checkIn);
@@ -707,8 +670,6 @@
 
                 const invoiceText = booking.invoiceRequested ? 'Richiesta Fattura: Sì' : 'Richiesta Fattura: No';
                 const discountText = booking.discountRate > 0 ? `Sconto: ${booking.discountRate}%` : '';
-                const bookingComText = booking.isBookingCom ? ' | Booking.com' : '';
-
 
                 let extrasList = '';
                 if (booking.extras && booking.extras.length > 0) {
@@ -719,7 +680,7 @@
                 bookingEl.className = `flex flex-col md:flex-row items-start md:items-center justify-between p-4 border border-gray-200 rounded-lg shadow-sm`;
                 bookingEl.innerHTML = `
                     <div class="flex-grow mb-2 md:mb-0">
-                        <h3 class="text-lg font-bold text-gray-800">${booking.guestName} ${bookingComText}</h3>
+                        <h3 class="text-lg font-bold text-gray-800">${booking.guestName}</h3>
                         <p class="text-sm text-gray-600">Stanza: ${booking.roomName || 'N/D'}</p>
                         <p class="text-sm text-gray-600">
                             Check-in: ${booking.checkInDate} <br class="md:hidden">
@@ -792,7 +753,6 @@
                         editInvoiceRequested.checked = booking.invoiceRequested;
                         editArrivalTime.value = booking.arrivalTime;
                         editNotes.value = booking.notes;
-                        editBookingDotCom.checked = booking.isBookingCom;
                         
                         // Mostra/nasconde i campi di pagamento
                         if (booking.paymentStatus === 'pagato') {
@@ -838,168 +798,9 @@
             const filteredBookings = allBookings.filter(booking => {
                 return booking.guestName.toLowerCase().includes(searchTerm);
             });
-            renderFilteredBookings(filteredBookings);
+            renderBookingsList(filteredBookings);
         });
 
-        const renderFilteredBookings = (bookings) => {
-            const listEl = bookingsList;
-            listEl.innerHTML = '';
-            
-            if (bookings.length === 0) {
-                 listEl.innerHTML = `<p class="text-center text-gray-500">Nessuna prenotazione trovata per il cliente.</p>`;
-                 return;
-            }
-
-            bookings.forEach(booking => {
-                const checkIn = new Date(booking.checkInDate);
-                const checkOut = new Date(booking.checkOutDate);
-                const diffTime = Math.abs(checkOut - checkIn);
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                const originalCost = (booking.dailyRate || 0) * diffDays;
-                const discountedCost = originalCost * (1 - (booking.discountRate || 0) / 100);
-                const extraCost = (booking.extras || []).reduce((sum, extra) => sum + (extra.cost || 0), 0);
-                const finalCost = discountedCost + extraCost;
-                
-                const arrivalTime = booking.arrivalTime ? ` | Arrivo: ${booking.arrivalTime}` : '';
-                const intolerances = booking.intolerances ? `<p class="text-sm text-red-600">Intolleranze: ${booking.intolerances}</p>` : '';
-                const notes = booking.notes ? `<p class="text-sm text-gray-600">Note: ${booking.notes}</p>` : '';
-                
-                const paymentStatusText = {
-                    'pagato': `Pagato (${booking.paymentMethod === 'contanti' ? 'Contanti' : booking.paymentMethod === 'carta_di_credito' ? 'Carta di Credito' : 'Bonifico'})`,
-                    'non_pagato': 'Non Pagato',
-                    'pagato_parzialmente': `Pagato Parzialmente (€${(booking.partialPaymentAmount || 0).toFixed(2)})`
-                };
-
-                const invoiceText = booking.invoiceRequested ? 'Richiesta Fattura: Sì' : 'Richiesta Fattura: No';
-                const discountText = booking.discountRate > 0 ? `Sconto: ${booking.discountRate}%` : '';
-                const bookingComText = booking.isBookingCom ? ' | Booking.com' : '';
-
-                const bookingEl = document.createElement('div');
-                bookingEl.className = `flex flex-col md:flex-row items-start md:items-center justify-between p-4 border border-gray-200 rounded-lg shadow-sm`;
-                
-                const today = new Date();
-                const checkoutDate = new Date(booking.checkOutDate);
-                
-                // Aggiungi una classe per le prenotazioni passate
-                if (checkoutDate < today) {
-                    bookingEl.classList.add('archived-booking');
-                }
-
-                bookingEl.innerHTML = `
-                    <div class="flex-grow mb-2 md:mb-0">
-                        <h3 class="text-lg font-bold text-gray-800">${booking.guestName} ${bookingComText}</h3>
-                        <p class="text-sm text-gray-600">Stanza: ${booking.roomName || 'N/D'}</p>
-                        <p class="text-sm text-gray-600">
-                            Check-in: ${booking.checkInDate} <br class="md:hidden">
-                            Check-out: ${booking.checkOutDate} ${arrivalTime}
-                        </p>
-                        <p class="text-sm text-gray-600">Ospiti: ${booking.numGuests}</p>
-                        ${intolerances}
-                        ${notes}
-                        <p class="text-sm text-gray-600">Tariffa: €${(booking.dailyRate || 0).toFixed(2)} ${discountText ? `(${discountText})` : ''}</p>
-                        <p class="text-sm font-bold text-gray-800">Costo Totale: €${finalCost.toFixed(2)} (incluso €${extraCost.toFixed(2)} di extra)</p>
-                        <p class="text-sm text-gray-600">Stato Pagamento: ${paymentStatusText[booking.paymentStatus]}</p>
-                        <p class="text-sm text-gray-600">${invoiceText}</p>
-                        ${extrasList ? `<div class="mt-2"><p class="font-semibold text-sm">Extra:</p><ul class="list-disc list-inside">${extrasList}</ul></div>` : ''}
-                    </div>
-                    <div class="flex flex-wrap space-x-2 space-y-2 md:space-y-0 mt-4 md:mt-0 items-center justify-end">
-                        <button class="add-extra-btn bg-green-500 text-white font-bold py-1 px-3 rounded-lg hover:bg-green-600 transition-colors" data-id="${booking.id}">Aggiungi Extra</button>
-                        <button class="summary-btn bg-indigo-500 text-white font-bold py-1 px-3 rounded-lg hover:bg-indigo-600 transition-colors" data-id="${booking.id}">Conto</button>
-                        <button class="gemini-email-btn bg-pink-500 text-white font-bold py-1 px-3 rounded-lg hover:bg-pink-600 transition-colors" data-id="${booking.id}">✨ Scrivi E-mail</button>
-                        <button class="edit-btn bg-yellow-500 text-white font-bold py-1 px-3 rounded-lg hover:bg-yellow-600 transition-colors" data-id="${booking.id}">Modifica</button>
-                        <button class="delete-btn bg-red-600 text-white font-bold py-1 px-3 rounded-lg hover:bg-red-700 transition-colors" data-id="${booking.id}">Elimina</button>
-                    </div>
-                `;
-                listEl.appendChild(bookingEl);
-            });
-            // Ri-aggiungi i listener dopo aver aggiornato la lista
-            document.querySelectorAll('.add-extra-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const bookingId = e.target.dataset.id;
-                    extraModal.dataset.bookingId = bookingId;
-                    extraModal.classList.remove('hidden');
-                });
-            });
-
-            document.querySelectorAll('.summary-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const bookingId = e.target.dataset.id;
-                    const booking = allBookings.find(b => b.id === bookingId);
-                    if (booking) {
-                        showSummaryModal(booking);
-                    }
-                });
-            });
-            
-            document.querySelectorAll('.gemini-email-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const bookingId = e.target.dataset.id;
-                    const booking = allBookings.find(b => b.id === bookingId);
-                    if (booking) {
-                        generateEmail(booking);
-                    }
-                });
-            });
-
-            document.querySelectorAll('.edit-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const id = e.target.dataset.id;
-                    const booking = allBookings.find(b => b.id === id);
-                    if (booking) {
-                        // Popola il modale di modifica
-                        editBookingId.value = booking.id;
-                        editGuestName.value = booking.guestName;
-                        editRoomName.value = booking.roomName;
-                        editNumGuests.value = booking.numGuests;
-                        editDailyRate.value = booking.dailyRate;
-                        editCheckinDate.value = booking.checkInDate;
-                        editCheckoutDate.value = booking.checkOutDate;
-                        editDiscountRate.value = booking.discountRate;
-                        editPaymentStatus.value = booking.paymentStatus;
-                        editIntolerances.value = booking.intolerances;
-                        editInvoiceRequested.checked = booking.invoiceRequested;
-                        editArrivalTime.value = booking.arrivalTime;
-                        editNotes.value = booking.notes;
-                        editBookingDotCom.checked = booking.isBookingCom;
-                        
-                        // Mostra/nasconde i campi di pagamento
-                        if (booking.paymentStatus === 'pagato') {
-                            editPaymentMethodContainer.classList.remove('hidden');
-                            editPartialPaymentContainer.classList.add('hidden');
-                            editPaymentMethod.value = booking.paymentMethod;
-                        } else if (booking.paymentStatus === 'pagato_parzialmente') {
-                            editPaymentMethodContainer.classList.add('hidden');
-                            editPartialPaymentContainer.classList.remove('hidden');
-                            editPartialPayment.value = booking.partialPaymentAmount;
-                        } else {
-                            editPaymentMethodContainer.classList.add('hidden');
-                            editPartialPaymentContainer.classList.add('hidden');
-                        }
-
-                        // Apri il modale
-                        editModal.classList.remove('hidden');
-                    }
-                });
-            });
-
-            document.querySelectorAll('.delete-btn').forEach(btn => {
-                btn.addEventListener('click', async (e) => {
-                    const id = e.target.dataset.id;
-                    const confirmDelete = await showModal('Elimina Prenotazione', 'Sei sicuro di voler eliminare questa prenotazione?', true);
-                    if (confirmDelete) {
-                        try {
-                            const collectionPath = `artifacts/${appId}/users/${userId}/bookings`;
-                            await deleteDoc(doc(db, collectionPath, id));
-                            showModal('Successo', 'Prenotazione eliminata con successo.');
-                        } catch (error) {
-                            console.error("Errore durante l'eliminazione della prenotazione:", error);
-                            showModal('Errore', 'Non è stato possibile eliminare la prenotazione. Controlla la console per i dettagli.');
-                        }
-                    }
-                });
-            });
-        };
-        
         // Gestione dell'invio del modulo di modifica
         editForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -1017,7 +818,6 @@
                 invoiceRequested: editInvoiceRequested.checked,
                 arrivalTime: editArrivalTime.value,
                 notes: editNotes.value,
-                isBookingCom: editBookingDotCom.checked,
                 // Campi di pagamento
                 paymentMethod: editPaymentStatus.value === 'pagato' ? editPaymentMethod.value : null,
                 partialPaymentAmount: editPaymentStatus.value === 'pagato_parzialmente' ? parseFloat(editPartialPayment.value) : null,
@@ -1031,6 +831,20 @@
             } catch (error) {
                 console.error("Errore durante la modifica della prenotazione:", error);
                 showModal('Errore', 'Non è stato possibile modificare la prenotazione. Controlla la console per i dettagli.');
+            }
+        });
+        
+        editPaymentStatus.addEventListener('change', (e) => {
+            if (e.target.value === 'pagato_parzialmente') {
+                editPartialPaymentContainer.classList.remove('hidden');
+                editPaymentMethodContainer.classList.add('hidden');
+            } else if (e.target.value === 'pagato') {
+                editPartialPaymentContainer.classList.add('hidden');
+                editPaymentMethodContainer.classList.remove('hidden');
+            }
+            else {
+                editPartialPaymentContainer.classList.add('hidden');
+                editPaymentMethodContainer.classList.add('hidden');
             }
         });
         
@@ -1098,8 +912,12 @@
 
         geminiCopyBtn.addEventListener('click', () => {
             const textToCopy = geminiContent.textContent;
-            document.execCommand('copy');
-            showModal('Copiato!', 'Il testo è stato copiato negli appunti.');
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                showModal('Copiato!', 'Il testo è stato copiato negli appunti.');
+            }).catch(err => {
+                console.error('Errore durante la copia del testo: ', err);
+                showModal('Errore', 'Non è stato possibile copiare il testo.');
+            });
         });
 
         geminiCloseBtn.addEventListener('click', () => {
@@ -1599,6 +1417,8 @@
                 const bookingsRef = collection(db, `artifacts/${appId}/users/${userId}/bookings`);
 
                 onSnapshot(bookingsRef, async (querySnapshot) => {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
                     allBookings = [];
                     querySnapshot.forEach((doc) => {
                         allBookings.push({ id: doc.id, ...doc.data() });
@@ -1638,7 +1458,6 @@
                 paymentMethod: (document.getElementById('payment-status').value === 'pagato') ? document.getElementById('payment-method').value : null,
                 partialPaymentAmount: (document.getElementById('payment-status').value === 'pagato_parzialmente') ? parseFloat(document.getElementById('partial-payment').value) : null,
                 invoiceRequested: document.getElementById('invoice-requested').checked,
-                isBookingCom: document.getElementById('booking-dot-com').checked,
                 extras: [],
                 createdAt: new Date()
             };
@@ -1686,18 +1505,10 @@
             return 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
         };
         
-        window.addEventListener('DOMContentLoaded', async () => {
+        window.addEventListener('DOMContentLoaded', () => {
             updateFilterInputs(summaryFilterSelect.value);
-            // Autenticazione iniziale al caricamento della pagina
-            // Controlla se è disponibile un token personalizzato, altrimenti usa l'autenticazione anonima.
-            // Questo assicura che l'app sia utilizzabile immediatamente, indipendentemente dallo stato di login.
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                 await signInWithCustomToken(auth, __initial_auth_token);
-            } else {
-                 await signInAnonymously(auth);
-            }
         });
     </script>
 </body>
 </html>
-bbb
+qqq

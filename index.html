@@ -134,7 +134,7 @@
             <div id="booking-manager-view" class="block">
                 <!-- Casella di ricerca -->
                 <div class="mb-4">
-                    <label for="search-guest-name" class="text-sm font-medium text-gray-600 mb-1">Trova cliente</label>
+                    <label for="search-guest-name" class="text-sm font-medium text-gray-600 mb-1">Trova cliente (cerca anche prenotazioni passate)</label>
                     <input type="text" id="search-guest-name" placeholder="Cerca per nome" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
                 </div>
 
@@ -511,13 +511,6 @@
         const summaryContentModal = document.getElementById('summary-content-modal');
         const copySummaryBtn = document.getElementById('copy-summary-btn');
         const closeSummaryBtn = document.getElementById('close-summary-btn');
-        const geminiModal = document.getElementById('gemini-modal');
-        const geminiTitle = document.getElementById('gemini-title');
-        const geminiContent = document.getElementById('gemini-content');
-        const geminiLoading = document.getElementById('gemini-loading');
-        const geminiCopyBtn = document.getElementById('gemini-copy-btn');
-        const geminiCloseBtn = document.getElementById('gemini-close-btn');
-        
         const editModal = document.getElementById('edit-modal');
         const editForm = document.getElementById('edit-form');
         const editBookingId = document.getElementById('edit-booking-id');
@@ -651,6 +644,11 @@
             bookings.forEach(booking => {
                 const checkIn = new Date(booking.checkInDate);
                 const checkOut = new Date(booking.checkOutDate);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                const isArchived = checkOut < today;
+
                 const diffTime = Math.abs(checkOut - checkIn);
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
                 const originalCost = (booking.dailyRate || 0) * diffDays;
@@ -677,7 +675,7 @@
                 }
 
                 const bookingEl = document.createElement('div');
-                bookingEl.className = `flex flex-col md:flex-row items-start md:items-center justify-between p-4 border border-gray-200 rounded-lg shadow-sm`;
+                bookingEl.className = `flex flex-col md:flex-row items-start md:items-center justify-between p-4 border border-gray-200 rounded-lg shadow-sm ${isArchived ? 'archived-booking' : ''}`;
                 bookingEl.innerHTML = `
                     <div class="flex-grow mb-2 md:mb-0">
                         <h3 class="text-lg font-bold text-gray-800">${booking.guestName}</h3>
@@ -698,7 +696,6 @@
                     <div class="flex flex-wrap space-x-2 space-y-2 md:space-y-0 mt-4 md:mt-0 items-center justify-end">
                         <button class="add-extra-btn bg-green-500 text-white font-bold py-1 px-3 rounded-lg hover:bg-green-600 transition-colors" data-id="${booking.id}">Aggiungi Extra</button>
                         <button class="summary-btn bg-indigo-500 text-white font-bold py-1 px-3 rounded-lg hover:bg-indigo-600 transition-colors" data-id="${booking.id}">Conto</button>
-                        <button class="gemini-email-btn bg-pink-500 text-white font-bold py-1 px-3 rounded-lg hover:bg-pink-600 transition-colors" data-id="${booking.id}">✨ Scrivi E-mail</button>
                         <button class="edit-btn bg-yellow-500 text-white font-bold py-1 px-3 rounded-lg hover:bg-yellow-600 transition-colors" data-id="${booking.id}">Modifica</button>
                         <button class="delete-btn bg-red-600 text-white font-bold py-1 px-3 rounded-lg hover:bg-red-700 transition-colors" data-id="${booking.id}">Elimina</button>
                     </div>
@@ -720,16 +717,6 @@
                     const booking = allBookings.find(b => b.id === bookingId);
                     if (booking) {
                         showSummaryModal(booking);
-                    }
-                });
-            });
-            
-            document.querySelectorAll('.gemini-email-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const bookingId = e.target.dataset.id;
-                    const booking = allBookings.find(b => b.id === bookingId);
-                    if (booking) {
-                        generateEmail(booking);
                     }
                 });
             });
@@ -795,6 +782,7 @@
         // Aggiungi un nuovo listener all'input di ricerca per filtrare le prenotazioni
         searchInput.addEventListener('input', (e) => {
             const searchTerm = e.target.value.toLowerCase();
+            // La ricerca ora filtra su TUTTE le prenotazioni, incluse quelle passate
             const filteredBookings = allBookings.filter(booking => {
                 return booking.guestName.toLowerCase().includes(searchTerm);
             });
@@ -850,78 +838,6 @@
         
         cancelEditBtn.addEventListener('click', () => {
             editModal.classList.add('hidden');
-        });
-
-        // Funzioni Gemini API
-        const callGeminiAPI = async (prompt, title) => {
-            geminiModal.classList.remove('hidden');
-            geminiTitle.textContent = title;
-            geminiContent.textContent = '';
-            geminiLoading.classList.add('flex');
-            geminiLoading.classList.remove('hidden');
-
-            const apiKey = ""; 
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
-
-            const payload = {
-                contents: [{ parts: [{ text: prompt }] }],
-                tools: [{ "google_search": {} }],
-                systemInstruction: {
-                    parts: [{ text: "Sei un assistente AI utile per la gestione di un B&B. Le tue risposte devono essere concise, professionali e personalizzate in base ai dati forniti." }]
-                }
-            };
-
-            let response;
-            try {
-                response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`API error: ${response.statusText}`);
-                }
-
-                const result = await response.json();
-                const text = result?.candidates?.[0]?.content?.parts?.[0]?.text || "Nessuna risposta generata.";
-                geminiContent.textContent = text;
-            } catch (error) {
-                console.error("Errore Gemini API:", error);
-                geminiContent.textContent = `Si è verificato un errore durante la generazione. Per favore, riprova. Errore: ${error.message}`;
-            } finally {
-                geminiLoading.classList.add('hidden');
-                geminiLoading.classList.remove('flex');
-            }
-        };
-        
-        const generateEmail = (booking) => {
-            const checkIn = new Date(booking.checkInDate);
-            const checkOut = new Date(booking.checkOutDate);
-            const diffTime = Math.abs(checkOut - checkIn);
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            const originalCost = (booking.dailyRate || 0) * diffDays;
-            const discountAmount = originalCost * (booking.discountRate || 0) / 100;
-            const discountedCost = originalCost - discountAmount;
-            const extraCost = (booking.extras || []).reduce((sum, extra) => sum + (extra.cost || 0), 0);
-            const finalCost = discountedCost + extraCost;
-
-            const prompt = `Scrivi una bozza di e-mail di benvenuto concisa e professionale per ${booking.guestName}. L'email deve confermare la prenotazione per la stanza ${booking.roomName}, le date di check-in (${booking.checkInDate}) e check-out (${booking.checkOutDate}), il numero di ospiti (${booking.numGuests}) e il costo totale del soggiorno (${finalCost.toFixed(2)} euro). Aggiungi un breve messaggio di benvenuto e di augurio per un piacevole soggiorno.`;
-            callGeminiAPI(prompt, "Bozza E-mail di Benvenuto");
-        };
-
-        geminiCopyBtn.addEventListener('click', () => {
-            const textToCopy = geminiContent.textContent;
-            navigator.clipboard.writeText(textToCopy).then(() => {
-                showModal('Copiato!', 'Il testo è stato copiato negli appunti.');
-            }).catch(err => {
-                console.error('Errore durante la copia del testo: ', err);
-                showModal('Errore', 'Non è stato possibile copiare il testo.');
-            });
-        });
-
-        geminiCloseBtn.addEventListener('click', () => {
-            geminiModal.classList.add('hidden');
         });
 
         // Gestione dell'invio del modulo extra
@@ -1419,13 +1335,17 @@
                 onSnapshot(bookingsRef, async (querySnapshot) => {
                     const today = new Date();
                     today.setHours(0, 0, 0, 0);
+
                     allBookings = [];
                     querySnapshot.forEach((doc) => {
                         allBookings.push({ id: doc.id, ...doc.data() });
                     });
                     
                     allBookings.sort((a, b) => new Date(a.checkInDate) - new Date(b.checkInDate));
-                    renderBookingsList(allBookings);
+                    
+                    const activeBookings = allBookings.filter(booking => new Date(booking.checkOutDate + 'T00:00:00') >= today);
+
+                    renderBookingsList(activeBookings);
                     renderCalendar();
                     calculateAndRenderSummary();
                 }, (error) => {
@@ -1511,4 +1431,4 @@
     </script>
 </body>
 </html>
-qqq
+AAA
